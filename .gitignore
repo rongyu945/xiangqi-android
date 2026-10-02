@@ -1,0 +1,14 @@
+# 构建产物（保留 apk/ 目录用于发布安装包）
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+
+# 签名密钥（绝不公开！）
+*.keystore
+*.jks
+
+# 系统
+.DS_Store

@@ -1,0 +1,2795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>中国象棋 · 离线AI增强版 v1.1.0</title>
+<style>
+@font-face {
+   font-family:'XQKaiti';
+   src:url(data:font/woff2;base64,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) format('woff2');
+   font-weight:normal; font-style:normal; font-display:swap;
+}
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; background:#f3e8d4; color:#2b2316; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:16px 12px; }
+    .header { margin-bottom:12px; display:flex; align-items:center; gap:12px; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+    .header h1 { font-size:1.5rem; font-weight:600; }
+    .game-container { width:100%; max-width:500px; display:flex; flex-direction:column; gap:6px; }
+
+    .status-bar { background:#fff; border-radius:20px; padding:7px 14px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:space-between; min-height:40px; transition:background .2s; }
+    .status-bar.check-alert { background:#fff0f0; box-shadow:0 0 12px rgba(255,0,0,0.2); }
+    .status-left { display:flex; align-items:center; gap:10px; }
+    .turn-indicator { width:14px; height:14px; border-radius:50%; border:2px solid #ccc; flex-shrink:0; transition:background .2s; }
+    .turn-indicator.red { background:#c0392b; border-color:#8e2b1f; }
+    .turn-indicator.black { background:#1f2937; border-color:#555; }
+    .status-text { font-weight:500; font-size:.92rem; }
+    .status-right { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; white-space:nowrap; }
+    .eval-score { font-size:.82rem; color:#6b7280; background:#f3f4f6; padding:2px 10px; border-radius:12px; flex-shrink:0; }
+    .thinking-indicator { display:none; align-items:center; gap:6px; color:#c9962f; font-weight:500; flex-shrink:0; font-size:.85rem; }
+    .thinking-indicator.show { display:flex; }
+    .thinking-dots span { display:inline-block; width:7px; height:7px; background:#c9962f; border-radius:50%; animation:dotBounce 1.2s infinite ease-in-out; }
+    .thinking-dots span:nth-child(2) { animation-delay:-0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay:-0.4s; }
+    @keyframes dotBounce { 0%,80%,100% { transform:scale(.6); opacity:.5; } 40% { transform:scale(1); opacity:1; } }
+
+    /* ===== 棋盘 ===== */
+    .board-frame { position:relative; width:100%; }
+    .board-wrapper {
+        position:relative; width:100%;
+        aspect-ratio: 9 / 10;
+        border-radius:12px;
+        background:
+            radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+            linear-gradient(135deg, #f3dcae 0%, #eccf95 45%, #e2c07f 100%);
+        box-shadow:0 8px 30px rgba(0,0,0,.14), inset 0 0 0 1px rgba(120,80,30,.25);
+        overflow:hidden;
+        touch-action: manipulation;
+        --cell: 44px;
+    }
+    .board-svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+    .board-svg line, .board-svg rect, .board-svg path { stroke:#7a5a2e; stroke-width:.035; stroke-linecap:round; fill:none; }
+    .board-svg .frame { stroke-width:.07; }
+    .board-svg text.river-text { fill:#8a6a3a; font-size:.78px; font-weight:700; letter-spacing:.16em;
+        font-family:"STKaiti","KaiTi","Songti SC",serif; }
+    .board-svg .mark { fill:#7a5a2e; stroke:none; }
+
+    .check-glow { position:absolute; top:0; left:0; width:100%; height:100%; border-radius:12px;
+        pointer-events:none; z-index:30; opacity:0; transition:opacity .25s ease;
+        box-shadow:0 0 18px 4px rgba(255,45,45,.55), 0 0 38px 14px rgba(255,45,45,.30); }
+    body.dark .check-glow { box-shadow:0 0 18px 4px rgba(255,60,60,.62), 0 0 38px 14px rgba(255,60,60,.36); }
+    .board-frame.checking .check-glow { opacity:1; animation:checkGlowPulse 1.1s ease-in-out infinite; }
+    @keyframes checkGlowPulse { 0%,100% { opacity:.82; } 50% { opacity:1; } }
+
+    .marks-layer, .pieces-layer { position:absolute; inset:0; }
+    .marks-layer { pointer-events:none; z-index:5; }
+    .pieces-layer { z-index:10; }
+
+    .mark-dot { position:absolute; width:calc(var(--cell)*.28); height:calc(var(--cell)*.28);
+        border-radius:50%; background:rgba(20,60,20,.28); transform:translate(-50%,-50%); }
+    .mark-ring { position:absolute; width:calc(var(--cell)*.92); height:calc(var(--cell)*.92);
+        border-radius:50%; border:3px solid rgba(220,60,40,.75); transform:translate(-50%,-50%);
+        box-shadow:0 0 10px rgba(220,60,40,.5); }
+    .mark-capture { position:absolute; width:calc(var(--cell)*.96); height:calc(var(--cell)*.96);
+        border-radius:50%; border:3px dashed rgba(200,40,30,.8); transform:translate(-50%,-50%); }
+    .mark-last { position:absolute; width:calc(var(--cell)*.95); height:calc(var(--cell)*.95);
+        border-radius:8px; border:2px solid rgba(40,120,60,.55); transform:translate(-50%,-50%); }
+
+    .xq-piece {
+        position:absolute;
+        width:calc(var(--cell) * .9);
+        height:calc(var(--cell) * .9);
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-family:"XQKaiti","STKaiti","KaiTi","Songti SC","SimSun",serif;
+        font-weight:700;
+        font-size:calc(var(--cell) * .54);
+        line-height:1;
+        cursor:pointer;
+        user-select:none;
+        z-index:10;
+        box-shadow:0 2px 5px rgba(0,0,0,.28);
+        transition:box-shadow .18s;
+    }
+    .xq-piece.red {
+        color:#b3221c;
+        background:radial-gradient(circle at 34% 28%, #fffdf6 0%, #fdf1d6 42%, #e8cf9d 100%);
+        border:2px solid #a97c46;
+        box-shadow:0 2px 5px rgba(80,50,10,.35), inset 0 0 0 2px rgba(255,255,255,.55), inset 0 -3px 6px rgba(160,120,60,.28);
+    }
+    .xq-piece.black {
+        color:#1b1b1b;
+        background:radial-gradient(circle at 34% 28%, #fffdf6 0%, #fdf1d6 42%, #e8cf9d 100%);
+        border:2px solid #6b5228;
+        box-shadow:0 2px 5px rgba(80,50,10,.35), inset 0 0 0 2px rgba(255,255,255,.55), inset 0 -3px 6px rgba(160,120,60,.28);
+    }
+    .xq-piece.selected { box-shadow:0 0 0 3px #f6c344, 0 6px 16px rgba(246,195,68,.5); }
+    .xq-piece.frozen { cursor:default; }
+    .xq-glyph { display:block; transform:translate(-1.5px,-1.5px); }
+    /* 双人模式：棋盘上方一方的棋子旋转 180° —— 使用独立 rotate 属性，不与 transform 冲突 */
+    .xq-glyph.piece-rotated { rotate: 180deg; }
+
+    /* 动画棋子：单独一层，绝对定位，走位用 left/top 过渡 */
+    .animating-piece {
+        pointer-events: none !important;
+        z-index: 60 !important;
+        cursor: default !important;
+        transition: left .32s cubic-bezier(.2,0,.2,1), top .32s cubic-bezier(.2,0,.2,1) !important;
+    }
+    /* AI 走子专用缓动：玩家保持原手感(0.2,0,0.2,1 / 0.32s)，仅 AI 走子用更柔和的缓入缓出 */
+    .animating-piece.ai-anim {
+        transition: left .38s cubic-bezier(.42,0,.58,1), top .38s cubic-bezier(.42,0,.58,1) !important;
+    }
+
+    .captured-pieces { display:flex; gap:3px; height:26px; flex-wrap:nowrap; overflow:hidden; justify-content:center; align-items:center; padding:0; }
+    .cap-piece {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:22px; height:22px; border-radius:50%;
+        font-family:"XQKaiti","STKaiti","KaiTi",serif; font-size:13px; font-weight:700;
+        background:#f5e6c8; border:1px solid #c0a068;
+        opacity:.82; animation:pieceAppear .18s ease;
+    }
+    .cap-piece.red { color:#b3221c; }
+    .cap-piece.black { color:#1b1b1b; }
+    @keyframes pieceAppear { from { opacity:0; transform:translateY(-6px); } to { opacity:.82; transform:translateY(0); } }
+
+    .controls { display:flex; flex-direction:column; gap:10px; }
+    .control-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; }
+    .control-row .btn { padding:10px 14px; }
+    @media (max-width:400px) { .control-row .btn { padding:8px 12px; } }
+    .btn { border:none; border-radius:14px; padding:10px 16px; font-size:.9rem; font-weight:600; cursor:pointer;
+        transition:all .15s; background:#e5e7eb; color:#1f2937; touch-action:manipulation; font-family:inherit; }
+    .btn:hover { background:#d1d5db; transform:translateY(-1px); }
+    .btn:active { transform:scale(.96); }
+    .btn.primary { background:#c9962f; color:#fff; }
+    .btn.primary:hover { background:#b3872a; }
+    .btn.danger { background:#ff5858; color:#fff; }
+    .btn.danger:hover { background:#e84848; }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .btn:disabled:hover { background:#e5e7eb; transform:none; }
+    .btn.danger:disabled:hover { background:#ff5858; }
+
+    /* ===== 5.2.9 定稿：双人面对面，两人各看自己那一侧 =====
+       双人模式：棋盘下方(己方) 一方棋子正向；棋盘上方(对方) 一方棋子倒置 180°。
+       用 .xq-glyph.piece-rotated 实现（rotate 独立属性，不占用 transform）。 */
+    body.pvp .xq-glyph.piece-rotated { rotate: 180deg; }
+
+    /* ===== 双人模式：对方（棋盘上方那方）倒置悔棋按钮 ===== */
+    .opp-undo-row { display:none; justify-content:center; padding:4px 0; }
+    body.pvp .opp-undo-row { display:flex; }
+    .btn.opp-undo { rotate:180deg; display:inline-flex; align-items:center; gap:4px; opacity:0.92; }
+    .btn.opp-undo:disabled { rotate:180deg; opacity:0.45; cursor:not-allowed; }
+    .btn.opp-undo:active { transform:scale(0.96); }
+    @supports not (rotate:180deg) {
+        .btn.opp-undo { transform:rotate(180deg); }
+        .btn.opp-undo:hover { transform:rotate(180deg) translateY(-1px); }
+        .btn.opp-undo:active { transform:rotate(180deg) scale(0.96); }
+        .btn.opp-undo:disabled:hover { transform:rotate(180deg); }
+    }
+
+    .difficulty-selector { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; align-items:center; }
+    body.pvp #difficultyLabel, body.pvp .difficulty-btn { display:none !important; }
+    .difficulty-selector label { font-size:.85rem; color:#4b5563; margin-right:4px; }
+    .difficulty-btn { border:1px solid #d1d5db; background:#fff; padding:4px 9px; min-height:30px; font-size:.8rem;
+        border-radius:10px; cursor:pointer; transition:all .15s; font-family:inherit; }
+    .difficulty-btn.active { background:#c9962f; color:#fff; border-color:#c9962f; }
+    .difficulty-btn:hover:not(.active) { background:#f3f4f6; }
+
+    /* ===== 练习模式：棋盘下方按钮的显示/隐藏 ===== */
+    #practicePickBtn { display:none; }
+    body.practice #stopAIBtn { display:none; }
+    body.practice #practicePickBtn { display:inline-block; }
+
+    .color-slider-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .color-slider { position:relative; display:flex; width:100%; max-width:300px; background:#e5e7eb; padding:2px;
+        border-radius:999px; box-shadow:inset 0 1px 3px rgba(0,0,0,.08); }
+    .color-slider-thumb { position:absolute; top:2px; bottom:2px; left:2px; width:calc((100% - 6px)/3);
+        background:#c9962f; border-radius:999px; box-shadow:0 2px 8px rgba(201,150,47,.4);
+        transition:transform .28s cubic-bezier(.25,.1,.25,1); }
+    .color-slider-opt { flex:1; position:relative; z-index:2; display:flex; align-items:center; justify-content:center;
+        gap:6px; min-height:32px; padding:3px 4px; border:none; background:transparent; border-radius:999px;
+        font-size:.85rem; font-weight:600; color:#6b7280; cursor:pointer; transition:color .2s; font-family:inherit; }
+    .color-slider-opt.active { color:#fff; }
+    .color-slider-opt:not(.active):hover { color:#1f2937; }
+    .color-slider-icon { font-size:1.1rem; line-height:1; }
+    .color-slider-hint { height:16px; font-size:.75rem; color:#d97706; opacity:0; transition:opacity .2s; }
+    .color-slider-hint.show { opacity:1; }
+
+    .move-history { background:#fff; border-radius:16px; padding:6px 14px; box-shadow:0 2px 8px rgba(0,0,0,.06); overflow:hidden; }
+    .move-history-title { font-size:.68rem; color:#6b7280; margin-bottom:2px; cursor:pointer; user-select:none;
+        display:flex; align-items:center; justify-content:space-between; gap:4px; }
+    .move-history-arrow { display:inline-block; font-size:1.7rem; line-height:1; color:#374151; transition:transform .2s; }
+    .move-history.collapsed .move-history-arrow { transform:rotate(90deg); }
+    .move-list { display:flex; flex-wrap:wrap; gap:3px 7px; max-height:84px; overflow-y:auto;
+        transition:max-height .2s, opacity .2s, margin .2s; }
+    .move-history.collapsed .move-list { max-height:0; opacity:0; margin-top:0; overflow:hidden; }
+    .move-entry { background:#f3f4f6; padding:1px 7px; border-radius:8px; font-family:monospace; font-size:.74rem;
+        animation:moveFade .18s ease; }
+    @keyframes moveFade { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
+    .move-entry.cur { background:#c9962f; color:#fff; }
+
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center;
+        justify-content:center; z-index:100; padding:20px; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#fff; border-radius:24px; padding:28px 24px; width:90%; max-width:320px;
+        box-shadow:0 8px 24px rgba(0,0,0,.15); animation:modalPop .18s ease; text-align:center; }
+    @keyframes modalPop { from { transform:scale(.92); opacity:0; } to { transform:scale(1); opacity:1; } }
+    .modal h2 { font-size:1.3rem; margin-bottom:8px; }
+    .modal p { color:#6b7280; margin-bottom:16px; white-space:pre-line; font-size:.9rem; line-height:1.6; }
+    .modal-close { margin-top:12px; width:100%; }
+    .modal-btn-row { display:none; gap:10px; margin-top:14px; }
+    .modal-btn-row.show { display:flex; }
+    .modal-btn-row .btn { flex:1; padding:11px 10px; }
+    /* 双人模式：对方（棋盘上方那方）走子/升变等弹窗整体翻转 180°（与悔棋按钮同侧翻转规则） */
+    .modal.promo-flip { rotate: 180deg; }
+    @supports not (rotate:180deg) {
+        .modal.promo-flip { transform:rotate(180deg); }
+    }
+
+    .toast { position:fixed; left:50%; top:14px; transform:translateX(-50%) translateY(-8px);
+        background:rgba(255,255,255,.97); color:#1f2937; border:1px solid rgba(31,41,55,.10);
+        box-shadow:0 6px 18px rgba(0,0,0,.16); padding:10px 18px; border-radius:14px; font-size:.85rem;
+        font-weight:500; opacity:0; pointer-events:none; transition:opacity .25s; z-index:300;
+        max-width:88vw; text-align:center; white-space:pre-line; }
+    .toast.show { opacity:1; }
+    /* 双人模式提示：对方侧的提示倒置 180°。
+       必须把 translateX 和 rotate 写进同一 transform（translateX(-50%) 在前居中定位，
+       rotate 绕自身中心翻转），绝不能叠加独立 rotate 属性——否则会和基础的
+       translateY(-8px) 组合成 translateY 先移 + rotate 后转，旋转后 -8px 反向后，
+       对方提示会明显上下位移。 */
+    .toast.toast-flip { transform: translateX(-50%) rotate(180deg); }
+    @supports not (rotate: 180deg) {
+        .toast.toast-flip { transform: translateX(-50%) rotate(180deg); }
+    }
+
+    .settings-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none;
+        align-items:center; justify-content:center; z-index:400; padding:20px; }
+    .settings-overlay.show { display:flex; }
+    .settings-panel { background:#fff; border-radius:20px; padding:18px 18px 14px; width:100%; max-width:320px;
+        box-shadow:0 10px 30px rgba(0,0,0,.22); animation:modalPop .18s ease; }
+    .settings-head h2 { font-size:.95rem; font-weight:600; }
+    .settings-sub { font-size:.64rem; color:#9ca3af; margin-bottom:9px; }
+    .settings-row { display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:13px 2px; border-top:1px solid #f1f5f9; }
+    .settings-row:first-of-type { border-top:none; }
+    .settings-row-label { font-size:.85rem; color:#374151; }
+    .switch { position:relative; width:40px; height:23px; flex-shrink:0; border:none; border-radius:999px;
+        background:#d1d5db; cursor:pointer; transition:background .2s; padding:0; }
+    .switch .knob { position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%;
+        background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.28); transition:transform .2s; }
+    .switch.on { background:#c9962f; }
+    .switch.on .knob { transform:translateX(17px); }
+    .settings-author { margin-top:10px; padding-top:8px; text-align:center; font-size:.7rem; color:#9ca3af; }
+    .settings-close { margin-top:12px; width:100%; }
+
+    /* 深色模式 */
+    body.dark { background:#22303f; color:#e6ebf2; }
+    body.dark .status-bar { background:#2b3a4b; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+    body.dark .status-bar.check-alert { background:#4a2b30; }
+    body.dark .eval-score { background:#354657; color:#a9b6c6; }
+    body.dark .btn { background:#354657; color:#e6ebf2; }
+    body.dark .btn:hover { background:#3e5162; }
+    body.dark .btn:disabled:hover { background:#354657; }
+    body.dark .difficulty-selector label { color:#a9b6c6; }
+    body.dark .difficulty-btn:not(.active) { background:#2b3a4b; border-color:#3e5162; color:#cfd9e4; }
+    body.dark .difficulty-btn:hover:not(.active) { background:#354657; }
+    body.dark .move-history { background:#2b3a4b; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+    body.dark .move-history-title { color:#a9b6c6; }
+    body.dark .move-history-arrow { color:#cfd9e4; }
+    body.dark .move-entry { background:#354657; color:#cfd9e4; }
+    body.dark .move-entry.cur { background:#c9962f; color:#fff; }
+    body.dark .color-slider { background:#354657; }
+    body.dark .color-slider-opt:not(.active) { color:#a9b6c6; }
+    body.dark .color-slider-opt:not(.active):hover { color:#e6ebf2; }
+    body.dark .header h1 { color:#e6ebf2; }
+    body.dark .modal, body.dark .settings-panel { background:#2b3a4b; color:#e6ebf2; }
+    body.dark .modal p { color:#a9b6c6; }
+    body.dark .settings-row { border-top-color:#354657; }
+    body.dark .settings-row-label { color:#cfd9e4; }
+    body.dark .switch:not(.on) { background:#3e5162; }
+    body.dark .toast { background:rgba(43,58,75,.97); color:#e6ebf2; border:1px solid rgba(255,255,255,.14); }
+    body.dark .board-wrapper {
+        background:
+            radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.10), transparent 60%),
+            linear-gradient(135deg, #6b5a3c 0%, #5e4e33 45%, #524428 100%);
+        box-shadow:0 8px 30px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.4);
+    }
+    body.dark .board-svg line, body.dark .board-svg rect, body.dark .board-svg path { stroke:#d9c39a; }
+    body.dark .board-svg text.river-text { fill:#d9c39a; }
+    body.dark .board-svg .mark { fill:#d9c39a; }
+    body.dark .cap-piece { background:#4a3c22; border-color:#7c6435; }
+    body.dark .cap-piece.red { color:#e0483f; }
+    body.dark .cap-piece.black { color:#ddd; }
+
+    .hint-btn { position:relative; width:32px; height:32px; border-radius:50%; flex-shrink:0;
+        border:none; margin-left:6px; background:rgba(255,255,255,.95); box-shadow:0 2px 6px rgba(0,0,0,.22);
+        line-height:0; cursor:pointer; z-index:6; display:none; align-items:center; justify-content:center;
+        -webkit-tap-highlight-color:transparent; padding:0; }
+    body.show-hint .hint-btn { display:inline-flex; }
+    .hint-btn:active { transform:scale(.9); }
+    .hint-btn.busy { animation:hintPulse .7s infinite alternate; }
+    @keyframes hintPulse { from { box-shadow:0 3px 10px rgba(0,0,0,.28); } to { box-shadow:0 0 18px rgba(88,204,2,.95); } }
+    .hint-arrow-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:45; }
+    body.dark .hint-btn { background:rgba(53,70,87,.96); }
+
+    /* 练习模式面板 */
+    .practice-bar { display:none; background:#fff; border-radius:14px; padding:10px 13px 11px; margin-bottom:10px;
+        box-shadow:0 2px 10px rgba(0,0,0,.07); }
+    body.practice .practice-bar { display:block; }
+    body.practice .color-slider-wrap { display:none; }
+    body.practice .difficulty-selector label { min-width:56px; }
+    .practice-title { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .practice-name { font-size:.95rem; font-weight:600; color:#1f2937; cursor:pointer; }
+    .practice-name::after { content:" ▾"; color:#9ca3af; font-size:.8em; }
+    .practice-progress { font-size:.74rem; color:#6b7280; flex-shrink:0; }
+    .practice-meta { display:inline-block; font-size:.66rem; color:#6b7280; background:#f3f4f6;
+        border-radius:999px; padding:2px 8px; margin-top:5px; }
+    .practice-goal { font-size:.76rem; color:#6b7280; margin-top:5px; line-height:1.55; }
+    .practice-track { height:6px; border-radius:3px; background:#e5e7eb; margin-top:9px; overflow:hidden; }
+    .practice-fill { height:100%; width:0; background:#c9962f; border-radius:3px; transition:width .25s, background .25s; }
+    .practice-fill.warn { background:#f59e0b; }
+    .practice-actions { display:flex; gap:8px; margin-top:10px; }
+    .practice-actions .btn { flex:1; padding:7px 0; font-size:.8rem; }
+    body.dark .practice-bar { background:#2b3a4b; }
+    body.dark .practice-name { color:#e6ebf2; }
+    body.dark .practice-goal, body.dark .practice-progress, body.dark .practice-meta { color:#a9b6c6; }
+    body.dark .practice-meta { background:#354657; }
+    body.dark .practice-track { background:#3e5162; }
+
+    .picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none;
+        align-items:center; justify-content:center; z-index:420; padding:18px; }
+    .picker-overlay.show { display:flex; }
+    .picker-panel { background:#fff; border-radius:20px; padding:16px 15px 13px; width:100%; max-width:340px;
+        max-height:78vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.22); }
+    .picker-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
+    .picker-head h2 { font-size:1.02rem; font-weight:600; }
+    .picker-sub { font-size:.7rem; color:#9ca3af; }
+    .picker-list { overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; margin:0 -4px; padding:0 4px; }
+    .picker-group { display:flex; align-items:center; gap:7px; font-size:.68rem; font-weight:600;
+        color:#6b7280; letter-spacing:.6px; margin:11px 0 6px; }
+    .picker-group::after { content:""; flex:1; height:1px; background:#eef1f4; }
+    .picker-group:first-child { margin-top:0; }
+    .picker-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none;
+        background:#f6f7f9; border-radius:9px; padding:8px 10px; margin-bottom:5px; cursor:pointer;
+        font-size:.82rem; color:#374151; font-family:inherit; }
+    .picker-item:active { background:#e9ecf1; }
+    .picker-item.cur { background:#e8f8d8; box-shadow:inset 0 0 0 1px #c9962f; }
+    .picker-no { width:20px; height:20px; border-radius:50%; background:#eef0f3; color:#6b7280;
+        font-size:.68rem; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .picker-item.cur .picker-no { background:#c9962f; color:#fff; }
+    .picker-name { flex:1; font-weight:500; }
+    .picker-tag { font-size:.66rem; color:#9ca3af; flex-shrink:0; }
+    .picker-close { margin-top:10px; width:100%; }
+    body.dark .picker-panel { background:#2b3a4b; color:#e6ebf2; }
+    body.dark .picker-item { background:#354657; color:#cfd9e4; }
+    body.dark .picker-item.cur { background:#2f4a2a; }
+    body.dark .picker-sub, body.dark .picker-group, body.dark .picker-no, body.dark .picker-tag { color:#a9b6c6; }
+    body.dark .picker-group::after { background:#3e5162; }
+
+    /* 练习结算 */
+    .practice-result { display:none; }
+    .practice-result.show { display:block; }
+    .pr-name { font-size:.8rem; color:#6b7280; }
+    .pr-steps { display:flex; align-items:baseline; justify-content:center; gap:5px; margin-top:3px; }
+    .pr-num { font-size:2.1rem; font-weight:700; line-height:1.05; color:#c9962f; font-variant-numeric:tabular-nums; }
+    .pr-unit { font-size:.9rem; font-weight:500; color:#374151; }
+    .pr-limit { font-size:.72rem; color:#9ca3af; margin-left:3px; }
+    .pr-note { margin-top:12px; padding-top:11px; border-top:1px solid #f1f5f9; font-size:.82rem;
+        color:#6b7280; line-height:1.65; }
+    .practice-result.fail .pr-num { color:#f59e0b; }
+    .modal.practice-ok h2 { color:#4a9e02; }
+    .modal.practice-fail h2 { color:#d97706; }
+    body.dark .pr-name { color:#a9b6c6; }
+    body.dark .pr-unit { color:#cfd9e4; }
+    body.dark .pr-limit { color:#8896a8; }
+    body.dark .pr-note { color:#a9b6c6; border-top-color:#3e5162; }
+    body.dark .modal.practice-ok h2 { color:#7fd13a; }
+    body.dark .modal.practice-fail h2 { color:#f0a63c; }
+
+    @media (max-width:400px) {
+        .header h1 { font-size:1.2rem; }
+        .btn { padding:8px 12px; font-size:.8rem; }
+    }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>中国象棋</h1>
+</div>
+<div class="game-container">
+    <div class="status-bar" id="status">
+        <div class="status-left">
+            <span class="turn-indicator red" id="turnIndicator"></span>
+            <span class="status-text" id="statusText">轮到红方走棋</span>
+        </div>
+        <div class="status-right">
+            <span class="eval-score" id="evalScore">均势</span>
+            <span class="thinking-indicator" id="thinkingIndicator">
+                AI思考中
+                <span class="thinking-dots"><span></span><span></span><span></span></span>
+            </span>
+        </div>
+    </div>
+
+    <div class="practice-bar" id="practiceBar">
+        <div class="practice-title">
+            <span class="practice-name" id="practiceName"></span>
+            <span class="practice-progress" id="practiceProgress"></span>
+        </div>
+        <div class="practice-meta" id="practiceMeta"></div>
+        <div class="practice-goal" id="practiceGoal"></div>
+        <div class="practice-track"><div class="practice-fill" id="practiceFill"></div></div>
+        <div class="practice-actions">
+            <button class="btn" id="practicePrevBtn">上一题</button>
+            <button class="btn" id="practiceRetryBtn">重试</button>
+            <button class="btn primary" id="practiceNextBtn">下一题</button>
+        </div>
+    </div>
+
+    <div class="color-slider-wrap" id="colorSliderWrap">
+        <div class="color-slider" id="colorSlider" role="radiogroup" aria-label="选择执子颜色">
+            <div class="color-slider-thumb" id="colorSliderThumb"></div>
+            <button type="button" class="color-slider-opt active" data-color="r"><span class="color-slider-icon">🔴</span><span>执红</span></button>
+            <button type="button" class="color-slider-opt" data-color="x"><span class="color-slider-icon">🎲</span><span>随机</span></button>
+            <button type="button" class="color-slider-opt" data-color="b"><span class="color-slider-icon">⚫</span><span>执黑</span></button>
+        </div>
+        <div class="color-slider-hint" id="colorSliderHint"></div>
+    </div>
+
+    <div class="captured-pieces" id="capturedByBlack"></div>
+
+    <div class="opp-undo-row" id="oppUndoRow">
+        <button class="btn opp-undo" id="oppUndoBtn">悔棋</button>
+    </div>
+
+    <div class="board-frame" id="boardFrame">
+        <div class="board-wrapper" id="boardWrapper">
+            <div class="marks-layer" id="marksLayer"></div>
+            <div class="pieces-layer" id="piecesLayer"></div>
+        </div>
+        <div class="check-glow" id="checkGlow"></div>
+    </div>
+
+    <div class="captured-pieces" id="capturedByRed"></div>
+
+    <div class="controls">
+        <div class="control-row difficulty-selector" id="difficultySelector">
+            <label id="difficultyLabel">难度</label>
+            <button class="difficulty-btn active" data-level="1">简单</button>
+            <button class="difficulty-btn" data-level="2">困难</button>
+            <button class="difficulty-btn" data-level="3">大师</button>
+            <button class="hint-btn" id="hintBtn" title="提示一步" aria-label="提示一步">
+                <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="#f59e0b" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18h6"/><path d="M10 21.5h4"/>
+                    <path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8V17h7.6v-2.7A6.5 6.5 0 0 0 12 2.5z"/>
+                </svg>
+            </button>
+        </div>
+        <div class="control-row">
+            <button class="btn primary" id="newGameBtn">新对局</button>
+            <button class="btn" id="undoBtn">悔棋</button>
+            <button class="btn" id="stopAIBtn">双人模式</button>
+            <button class="btn danger" id="resignBtn">认输</button>
+            <button class="btn" id="practicePickBtn">选题</button>
+        </div>
+    </div>
+
+    <div class="move-history collapsed" id="moveHistory">
+        <div class="move-history-title" id="moveHistoryTitle">走棋记录<span class="move-history-arrow">▸</span></div>
+        <div class="move-list" id="moveList"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h2 id="modalTitle">游戏结束</h2>
+        <div class="practice-result" id="modalPracticeResult"></div>
+        <p id="modalMessage"></p>
+        <button class="btn primary modal-close" id="modalCloseBtn" style="display:none;">确定</button>
+        <div class="modal-btn-row" id="modalConfirmRow">
+            <button class="btn" id="modalCancelBtn">取消</button>
+            <button class="btn danger" id="modalConfirmBtn">确认</button>
+        </div>
+        <div class="modal-btn-row" id="modalPracticeRow">
+            <button class="btn" id="modalPracticeRetry">重试本题</button>
+            <button class="btn primary" id="modalPracticeNext">下一题</button>
+        </div>
+        <div class="modal-btn-row" id="modalEndRow">
+            <button class="btn" id="modalAnalysisBtn">复盘</button>
+            <button class="btn" id="modalEndCloseBtn">看看棋盘</button>
+            <button class="btn primary" id="modalRematchBtn">再来一局</button>
+        </div>
+        <div class="modal-btn-row" id="modalSwitchRow">
+            <button class="btn" id="modalSwitchContinueBtn">继续</button>
+            <button class="btn danger" id="modalSwitchEndBtn">结束对局</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="picker-overlay" id="practicePicker">
+    <div class="picker-panel">
+        <div class="picker-head"><h2>选择练习题</h2><span class="picker-sub" id="practicePickerSub"></span></div>
+        <div class="picker-list" id="practicePickerList"></div>
+        <button class="btn picker-close" id="practicePickerClose">关闭</button>
+    </div>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-panel">
+        <div class="settings-head"><h2>精细设置</h2></div>
+        <div class="settings-sub">长按顶部标题可再次唤出</div>
+        <div class="settings-row">
+            <span class="settings-row-label">深色模式</span>
+            <button class="switch" id="switchDark" role="switch" aria-checked="false"><span class="knob"></span></button>
+        </div>
+        <div class="settings-row">
+            <span class="settings-row-label">声音效果</span>
+            <button class="switch" id="switchSound" role="switch" aria-checked="true"><span class="knob"></span></button>
+        </div>
+        <div class="settings-row">
+            <span class="settings-row-label">需要提示</span>
+            <button class="switch" id="switchHint" role="switch" aria-checked="false"><span class="knob"></span></button>
+        </div>
+        <div class="settings-row">
+            <span class="settings-row-label">练习模式</span>
+            <button class="switch" id="switchPractice" role="switch" aria-checked="false"><span class="knob"></span></button>
+        </div>
+        <div class="settings-author">中国象棋 · 离线AI增强版</div>
+        <div class="settings-author" style="margin-top:0;padding-top:2px;">作者：戎昱</div>
+        <button class="btn settings-close" id="settingsClose">关闭</button>
+    </div>
+</div>
+
+<script>
+/* =========================================================================
+   中国象棋引擎
+   棋盘：10 行 × 9 列
+   行 0 = 黑方底线（上方），行 9 = 红方底线（下方）
+   列 0 = 最左（黑方视角的 9 路 / 红方视角的 九 路）
+   红方为正数，黑方为负数
+   ========================================================================= */
+const XQ = (() => {
+    const EMPTY = 0, KING = 1, ADVISOR = 2, ELEPHANT = 3, HORSE = 4, CHARIOT = 5, CANNON = 6, PAWN = 7;
+    const RED = 1, BLACK = -1;
+    const ROWS = 10, COLS = 9;
+    const MATE = 100000;
+
+    const VALUES = { [KING]: 100000, [CHARIOT]: 900, [CANNON]: 450, [HORSE]: 400,
+                     [ADVISOR]: 200, [ELEPHANT]: 200, [PAWN]: 100 };
+
+    /* ---- Zobrist 哈希 + 置换表（TT）---- */
+    const ZOBRIST = (() => {
+        let seed = 0x9e3779b9;
+        const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed; };
+        const table = [];
+        for (let i = 0; i < 90; i++) { const row = []; for (let k = 0; k < 15; k++) row.push(rnd()); table.push(row); }
+        const turnKey = rnd();
+        const blackSideKey = rnd();
+        function keyOf(board, color) {
+            let h = turnKey;
+            if (color === BLACK) h ^= blackSideKey;
+            for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                const p = board[r][c];
+                if (p !== 0) h ^= table[r * COLS + c][p + 7];
+            }
+            return h;
+        }
+        return { table, turnKey, keyOf };
+    })();
+    const TT = new Map();
+    const TT_MAX = 200000;
+    const SAME_MOVE = (m1, m2) => !!m2 && m1.from[0] === m2.from[0] && m1.from[1] === m2.from[1]
+        && m1.to[0] === m2.to[0] && m1.to[1] === m2.to[1];
+    function probeTT(key, depth, alpha, beta) {
+        const te = TT.get(key);
+        if (!te) return { hit: false, move: null };
+        if (te.depth >= depth) {
+            if (Math.abs(te.score) > MATE - 1000) {
+                return { hit: false, move: te.move };
+            }
+            if (te.flag === 'exact') return { hit: true, score: te.score, move: te.move };
+            if (te.flag === 'lower' && te.score >= beta) return { hit: true, score: te.score, move: te.move };
+            if (te.flag === 'upper' && te.score <= alpha) return { hit: true, score: te.score, move: te.move };
+        }
+        return { hit: false, move: te.move };
+    }
+    function storeTT(key, depth, score, alpha, beta, move) {
+        if (TT.size > TT_MAX) TT.clear();
+        let flag = 'exact';
+        if (score <= alpha) flag = 'upper';
+        else if (score >= beta) flag = 'lower';
+        TT.set(key, { depth, score, flag, move: move || null });
+    }
+
+    const ORTHO = [[-1,0],[1,0],[0,-1],[0,1]];
+    const DIAG  = [[-1,-1],[-1,1],[1,-1],[1,1]];
+
+    const HORSE_MOVES = [
+        [-2,-1,-1,0],[-2,1,-1,0],[2,-1,1,0],[2,1,1,0],
+        [-1,-2,0,-1],[1,-2,0,-1],[-1,2,0,1],[1,2,0,1]
+    ];
+
+    function createInitialBoard() {
+        const b = Array.from({length: ROWS}, () => new Array(COLS).fill(0));
+        b[0] = [-CHARIOT, -HORSE, -ELEPHANT, -ADVISOR, -KING, -ADVISOR, -ELEPHANT, -HORSE, -CHARIOT];
+        b[2][1] = -CANNON; b[2][7] = -CANNON;
+        b[3][0] = -PAWN; b[3][2] = -PAWN; b[3][4] = -PAWN; b[3][6] = -PAWN; b[3][8] = -PAWN;
+        b[6][0] = PAWN;  b[6][2] = PAWN;  b[6][4] = PAWN;  b[6][6] = PAWN;  b[6][8] = PAWN;
+        b[7][1] = CANNON; b[7][7] = CANNON;
+        b[9] = [CHARIOT, HORSE, ELEPHANT, ADVISOR, KING, ADVISOR, ELEPHANT, HORSE, CHARIOT];
+        return b;
+    }
+
+    function cloneBoard(b) { return b.map(row => row.slice()); }
+    function getType(p) { return p > 0 ? p : -p; }
+    function getColor(p) { return p > 0 ? RED : BLACK; }
+    function inBounds(r, c) { return r >= 0 && r < ROWS && c >= 0 && c < COLS; }
+    function inPalace(r, c, color) {
+        if (c < 3 || c > 5) return false;
+        return color === RED ? (r >= 7 && r <= 9) : (r >= 0 && r <= 2);
+    }
+
+    function findKing(board, color) {
+        const target = color * KING;
+        for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+            if (board[r][c] === target) return [r, c];
+        }
+        return null;
+    }
+
+    function isSquareAttacked(board, r, c, byColor) {
+        for (let d = 0; d < 4; d++) {
+            const dr = ORTHO[d][0], dc = ORTHO[d][1];
+            let nr = r + dr, nc = c + dc;
+            let firstR = -1, firstC = -1, firstP = 0;
+            while (inBounds(nr, nc)) {
+                if (board[nr][nc] !== 0) { firstR = nr; firstC = nc; firstP = board[nr][nc]; break; }
+                nr += dr; nc += dc;
+            }
+            if (firstR < 0) continue;
+            if (getColor(firstP) === byColor) {
+                const t = getType(firstP);
+                if (t === CHARIOT) return true;
+                if (t === KING) {
+                    if (Math.abs(firstR - r) + Math.abs(firstC - c) === 1) return true;
+                    if (dc === 0) return true;
+                }
+            }
+            let mr = firstR + dr, mc = firstC + dc;
+            while (inBounds(mr, mc)) {
+                const q = board[mr][mc];
+                if (q !== 0) {
+                    if (getColor(q) === byColor && getType(q) === CANNON) return true;
+                    break;
+                }
+                mr += dr; mc += dc;
+            }
+        }
+        for (let i = 0; i < HORSE_MOVES.length; i++) {
+            const h = HORSE_MOVES[i];
+            const hr = r + h[0], hc = c + h[1];
+            if (!inBounds(hr, hc)) continue;
+            const q = board[hr][hc];
+            if (q === 0 || getColor(q) !== byColor || getType(q) !== HORSE) continue;
+            const ddr = -h[0], ddc = -h[1];
+            let lr, lc;
+            if (Math.abs(ddr) === 2) { lr = hr + ddr / 2; lc = hc; }
+            else { lr = hr; lc = hc + ddc / 2; }
+            if (board[lr][lc] === 0) return true;
+        }
+        if (byColor === RED) {
+            if (inBounds(r + 1, c) && board[r + 1][c] === PAWN) return true;
+            if (r <= 4) {
+                for (let k = -1; k <= 1; k += 2) {
+                    if (inBounds(r, c + k) && board[r][c + k] === PAWN) return true;
+                }
+            }
+        } else {
+            if (inBounds(r - 1, c) && board[r - 1][c] === -PAWN) return true;
+            if (r >= 5) {
+                for (let k = -1; k <= 1; k += 2) {
+                    if (inBounds(r, c + k) && board[r][c + k] === -PAWN) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function isInCheck(board, color) {
+        const k = findKing(board, color);
+        if (!k) return false;
+        return isSquareAttacked(board, k[0], k[1], -color);
+    }
+
+    function generateMoves(board, color, capturesOnly) {
+        const moves = [];
+        const push = (r, c, tr, tc) => {
+            const q = board[tr][tc];
+            if (capturesOnly && q === 0) return;
+            moves.push({ from: [r, c], to: [tr, tc], piece: board[r][c], captured: q });
+        };
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const p = board[r][c];
+                if (p === 0 || getColor(p) !== color) continue;
+                const t = getType(p);
+
+                if (t === KING) {
+                    for (let d = 0; d < 4; d++) {
+                        const nr = r + ORTHO[d][0], nc = c + ORTHO[d][1];
+                        if (!inPalace(nr, nc, color)) continue;
+                        const q = board[nr][nc];
+                        if (q !== 0 && getColor(q) === color) continue;
+                        push(r, c, nr, nc);
+                    }
+                } else if (t === ADVISOR) {
+                    for (let d = 0; d < 4; d++) {
+                        const nr = r + DIAG[d][0], nc = c + DIAG[d][1];
+                        if (!inPalace(nr, nc, color)) continue;
+                        const q = board[nr][nc];
+                        if (q !== 0 && getColor(q) === color) continue;
+                        push(r, c, nr, nc);
+                    }
+                } else if (t === ELEPHANT) {
+                    for (let d = 0; d < 4; d++) {
+                        const nr = r + DIAG[d][0] * 2, nc = c + DIAG[d][1] * 2;
+                        if (!inBounds(nr, nc)) continue;
+                        if (color === RED && nr < 5) continue;
+                        if (color === BLACK && nr > 4) continue;
+                        if (board[r + DIAG[d][0]][c + DIAG[d][1]] !== 0) continue;
+                        const q = board[nr][nc];
+                        if (q !== 0 && getColor(q) === color) continue;
+                        push(r, c, nr, nc);
+                    }
+                } else if (t === HORSE) {
+                    for (let i = 0; i < HORSE_MOVES.length; i++) {
+                        const h = HORSE_MOVES[i];
+                        const nr = r + h[0], nc = c + h[1];
+                        if (!inBounds(nr, nc)) continue;
+                        if (board[r + h[2]][c + h[3]] !== 0) continue;
+                        const q = board[nr][nc];
+                        if (q !== 0 && getColor(q) === color) continue;
+                        push(r, c, nr, nc);
+                    }
+                } else if (t === CHARIOT) {
+                    for (let d = 0; d < 4; d++) {
+                        const dr = ORTHO[d][0], dc = ORTHO[d][1];
+                        let nr = r + dr, nc = c + dc;
+                        while (inBounds(nr, nc)) {
+                            const q = board[nr][nc];
+                            if (q === 0) {
+                                if (!capturesOnly) moves.push({ from: [r, c], to: [nr, nc], piece: p, captured: 0 });
+                            } else {
+                                if (getColor(q) !== color) moves.push({ from: [r, c], to: [nr, nc], piece: p, captured: q });
+                                break;
+                            }
+                            nr += dr; nc += dc;
+                        }
+                    }
+                } else if (t === CANNON) {
+                    for (let d = 0; d < 4; d++) {
+                        const dr = ORTHO[d][0], dc = ORTHO[d][1];
+                        let nr = r + dr, nc = c + dc;
+                        let jumped = false;
+                        while (inBounds(nr, nc)) {
+                            const q = board[nr][nc];
+                            if (!jumped) {
+                                if (q === 0) {
+                                    if (!capturesOnly) moves.push({ from: [r, c], to: [nr, nc], piece: p, captured: 0 });
+                                } else {
+                                    jumped = true;
+                                }
+                            } else {
+                                if (q !== 0) {
+                                    if (getColor(q) !== color) moves.push({ from: [r, c], to: [nr, nc], piece: p, captured: q });
+                                    break;
+                                }
+                            }
+                            nr += dr; nc += dc;
+                        }
+                    }
+                } else if (t === PAWN) {
+                    const forward = color === RED ? -1 : 1;
+                    const nr = r + forward;
+                    if (inBounds(nr, c)) {
+                        const q = board[nr][c];
+                        if (q === 0 || getColor(q) !== color) push(r, c, nr, c);
+                    }
+                    const crossed = color === RED ? (r <= 4) : (r >= 5);
+                    if (crossed) {
+                        for (let k = -1; k <= 1; k += 2) {
+                            const nc = c + k;
+                            if (!inBounds(r, nc)) continue;
+                            const q = board[r][nc];
+                            if (q === 0 || getColor(q) !== color) push(r, c, r, nc);
+                        }
+                    }
+                }
+            }
+        }
+        return moves;
+    }
+
+    function makeMove(board, move) {
+        const cap = board[move.to[0]][move.to[1]];
+        board[move.to[0]][move.to[1]] = board[move.from[0]][move.from[1]];
+        board[move.from[0]][move.from[1]] = 0;
+        return cap;
+    }
+    function unmakeMove(board, move, cap) {
+        board[move.from[0]][move.from[1]] = board[move.to[0]][move.to[1]];
+        board[move.to[0]][move.to[1]] = cap;
+    }
+
+    function legalMoves(board, color) {
+        const pseudo = generateMoves(board, color, false);
+        const out = [];
+        for (let i = 0; i < pseudo.length; i++) {
+            const m = pseudo[i];
+            const cap = makeMove(board, m);
+            if (!isInCheck(board, color)) out.push(m);
+            unmakeMove(board, m, cap);
+        }
+        return out;
+    }
+
+    function evaluate(board) {
+        let score = 0;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const p = board[r][c];
+                if (p === 0) continue;
+                const color = p > 0 ? RED : BLACK;
+                const t = getType(p);
+                let v = VALUES[t] || 0;
+                const rr = color === RED ? r : 9 - r;
+                const cc = c;
+                switch (t) {
+                    case PAWN: {
+                        const adv = 6 - rr;
+                        if (adv > 0) v += adv * 14;
+                        if (rr <= 4) v += 40;
+                        if (cc >= 3 && cc <= 5) v += 12;
+                        break;
+                    }
+                    case HORSE:
+                        v += (4 - Math.abs(cc - 4)) * 6;
+                        v += Math.max(0, rr - 3) * 4;
+                        break;
+                    case CANNON:
+                        v += (4 - Math.abs(cc - 4)) * 4;
+                        break;
+                    case CHARIOT:
+                        v += (4 - Math.abs(cc - 4)) * 3;
+                        break;
+                    case KING:
+                        if (!inPalace(r, c, color)) v -= 50;
+                        break;
+                }
+                score += color * v;
+            }
+        }
+        return score;
+    }
+
+    function captureScore(m) {
+        if (!m.captured) return 0;
+        return (VALUES[getType(m.captured)] || 0) * 10 - (VALUES[getType(m.piece)] || 0);
+    }
+
+    function quiesce(board, alpha, beta, color, ctx) {
+        if (ctx.abort) return 0;
+        if ((++ctx.nodes & 1023) === 0 && Date.now() - ctx.start > ctx.limit) { ctx.abort = true; return 0; }
+
+        const inCheck = isInCheck(board, color);
+        let best;
+        if (inCheck) {
+            best = -MATE + ctx.ply;
+        } else {
+            const stand = evaluate(board) * color;
+            if (stand >= beta) return stand;
+            if (stand > alpha) alpha = stand;
+            best = stand;
+            if (ctx.qdepth >= 4) return stand;
+        }
+
+        let moves;
+        if (inCheck) {
+            moves = legalMoves(board, color);
+        } else {
+            const pseudo = generateMoves(board, color, true);
+            moves = [];
+            for (let i = 0; i < pseudo.length; i++) {
+                const m = pseudo[i];
+                const cap = makeMove(board, m);
+                if (!isInCheck(board, color)) moves.push(m);
+                unmakeMove(board, m, cap);
+            }
+        }
+        if (moves.length === 0) return inCheck ? (-MATE + ctx.ply) : best;
+
+        moves.sort((a, b) => captureScore(b) - captureScore(a));
+
+        for (let i = 0; i < moves.length; i++) {
+            const m = moves[i];
+            const cap = makeMove(board, m);
+            ctx.ply++;
+            ctx.qdepth++;
+            const v = -quiesce(board, -beta, -alpha, -color, ctx);
+            ctx.qdepth--;
+            ctx.ply--;
+            unmakeMove(board, m, cap);
+            if (ctx.abort) return 0;
+            if (v > best) best = v;
+            if (best > alpha) alpha = best;
+            if (alpha >= beta) break;
+        }
+        return best;
+    }
+
+    function search(board, depth, alpha, beta, color, ctx) {
+        if (ctx.abort) return 0;
+        if ((++ctx.nodes & 1023) === 0 && Date.now() - ctx.start > ctx.limit) { ctx.abort = true; return 0; }
+
+        if (depth <= 0) return quiesce(board, alpha, beta, color, ctx);
+
+        const key = ZOBRIST.keyOf(board, color);
+        const tt = probeTT(key, depth, alpha, beta);
+        if (tt.hit) return tt.score;
+
+        const moves = legalMoves(board, color);
+        if (moves.length === 0) return -MATE + ctx.ply;
+
+        moves.sort((a, b) => captureScore(b) - captureScore(a));
+        if (tt.move) {
+            const idx = moves.findIndex(m => SAME_MOVE(m, tt.move));
+            if (idx > 0) { const t = moves[0]; moves[0] = moves[idx]; moves[idx] = t; }
+        }
+
+        let best = -Infinity;
+        let bestMove = null;
+        for (let i = 0; i < moves.length; i++) {
+            const m = moves[i];
+            const cap = makeMove(board, m);
+            ctx.ply++;
+            const v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+            ctx.ply--;
+            unmakeMove(board, m, cap);
+            if (ctx.abort) return 0;
+            if (v > best) { best = v; bestMove = m; }
+            if (best > alpha) alpha = best;
+            if (alpha >= beta) break;
+        }
+        if (Math.abs(best) < MATE - depth * 2) {
+            storeTT(key, depth, best, alpha, beta, bestMove);
+        }
+        return best;
+    }
+
+    let lastNodes = 0;
+    function getLastNodes() { return lastNodes; }
+
+    function findBestMove(board, color, level) {
+        const depthMap = { 1: 2, 2: 3, 3: 5 };
+        const limitMap = { 1: 400, 2: 900, 3: 3000 };
+        const marginMap = { 1: 90, 2: 35, 3: 0 };
+
+        const maxDepth = depthMap[level] || 2;
+        const timeLimit = limitMap[level] || 400;
+        const margin = marginMap[level] !== undefined ? marginMap[level] : 0;
+
+        const work = cloneBoard(board);
+        const roots = legalMoves(work, color);
+        if (roots.length === 0) return null;
+
+        const ctx = { start: Date.now(), limit: timeLimit, abort: false, nodes: 0, ply: 0, qdepth: 0 };
+        roots.sort((a, b) => captureScore(b) - captureScore(a));
+
+        let bestMove = roots[0];
+        let bestScores = null;
+
+        for (let d = 1; d <= maxDepth; d++) {
+            let localBest = null, localScore = -Infinity;
+            const iter = [];
+            let aborted = false;
+            for (let i = 0; i < roots.length; i++) {
+                const m = roots[i];
+                const cap = makeMove(work, m);
+                ctx.ply = 1;
+                const v = -search(work, d - 1, -Infinity, Infinity, -color, ctx);
+                unmakeMove(work, m, cap);
+                if (ctx.abort) { aborted = true; break; }
+                m.score = v;
+                iter.push(m);
+                if (v > localScore) { localScore = v; localBest = m; }
+            }
+            if (aborted) break;
+            bestMove = localBest;
+            bestScores = iter.map(m => ({ m: m, score: m.score }));
+            roots.sort((a, b) => (b.score || 0) - (a.score || 0));
+            if (Date.now() - ctx.start > timeLimit * 0.55) break;
+        }
+        lastNodes = ctx.nodes;
+
+        let pool = bestScores ? bestScores.filter(s => s.score >= (bestScores[0].score - margin)) : null;
+        if (!pool || pool.length === 0) return bestMove;
+        if (level === 1 && pool.length > 1) {
+            const safe = pool.filter(s => {
+                const test = cloneBoard(board);
+                const cap = makeMove(test, s.m);
+                const recapture = legalMoves(test, -color).some(r =>
+                    r.to[0] === s.m.to[0] && r.to[1] === s.m.to[1] &&
+                    (VALUES[getType(r.piece)] || 0) >= 400
+                );
+                const gain = s.m.captured ? (VALUES[getType(s.m.captured)] || 0) : 0;
+                const loss = (VALUES[getType(s.m.piece)] || 0);
+                const bad = recapture && gain < loss - 200;
+                unmakeMove(test, s.m, cap);
+                return !bad;
+            });
+            if (safe.length) pool = safe;
+        }
+        const pick = Math.min(pool.length - 1, Math.floor(Math.pow(Math.random(), 1.6) * pool.length));
+        return pool[pick].m;
+    }
+
+    return {
+        RED, BLACK, KING, ADVISOR, ELEPHANT, HORSE, CHARIOT, CANNON, PAWN,
+        ROWS, COLS, MATE,
+        createInitialBoard, cloneBoard, getType, getColor, inBounds, inPalace,
+        findKing, isSquareAttacked, isInCheck,
+        generateMoves, legalMoves, makeMove, unmakeMove,
+        evaluate, findBestMove, getLastNodes
+    };
+})();
+
+/* ===================== 音效 ===================== */
+const SoundManager = (() => {
+    let audioCtx = null, master = null, muted = false;
+
+    function setMuted(v) {
+        muted = !!v;
+        if (master) master.gain.value = muted ? 0 : 0.9;
+    }
+    function isMuted() { return muted; }
+
+    function initAudio() {
+        if (muted) return false;
+        if (!audioCtx) {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                master = audioCtx.createGain();
+                master.gain.value = 0.9;
+                master.connect(audioCtx.destination);
+            } catch (e) { audioCtx = null; return false; }
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return true;
+    }
+
+    function tone(freq, dur, type, vol, delay, endFreq) {
+        if (!audioCtx || !master) return;
+        const t0 = audioCtx.currentTime + (delay || 0);
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type || 'triangle';
+        osc.frequency.setValueAtTime(freq, t0);
+        if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t0 + dur);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(vol, t0 + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(g); g.connect(master);
+        osc.start(t0); osc.stop(t0 + dur + 0.02);
+    }
+
+    function knock(dur, vol, delay, hp) {
+        if (!audioCtx || !master) return;
+        const t0 = audioCtx.currentTime + (delay || 0);
+        const len = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+        const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+        const s = audioCtx.createBufferSource(); s.buffer = buf;
+        const f = audioCtx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp || 1200;
+        const g = audioCtx.createGain(); g.gain.value = vol;
+        s.connect(f); f.connect(g); g.connect(master);
+        s.start(t0);
+    }
+
+    function playMove() {
+        if (!initAudio()) return;
+        tone(300, 0.09, 'triangle', 0.16, 0, 190);
+        knock(0.04, 0.11, 0, 1400);
+    }
+    function playCapture() {
+        if (!initAudio()) return;
+        tone(200, 0.15, 'triangle', 0.2, 0, 110);
+        knock(0.075, 0.16, 0, 850);
+        tone(1400, 0.03, 'square', 0.045, 0.005);
+    }
+    function playCheck() {
+        if (!initAudio()) return;
+        tone(720, 0.1, 'square', 0.09);
+        tone(960, 0.17, 'square', 0.1, 0.1);
+    }
+    function playGameEnd() {
+        if (!initAudio()) return;
+        [[523,0],[659,0.13],[784,0.26],[1047,0.40]].forEach(p => tone(p[0], 0.22, 'sine', 0.15, p[1]));
+    }
+
+    return { playMove, playCapture, playCheck, playGameEnd, setMuted, isMuted };
+})();
+
+/* ===================== 棋子显示 ===================== */
+const PIECE_CHARS = {
+    1: '帥', '-1': '將',
+    2: '仕', '-2': '士',
+    3: '相', '-3': '象',
+    4: '傌', '-4': '馬',
+    5: '俥', '-5': '車',
+    6: '炮', '-6': '炮',
+    7: '兵', '-7': '卒'
+};
+const CN_NUM = ['一','二','三','四','五','六','七','八','九'];
+const FILES = ['a','b','c','d','e','f','g','h','i'];
+
+/* ===================== 练习题库 ===================== */
+const UNDO_LIMITS = { 1: 10, 2: 7, 3: 3 };
+
+// pieces: [字符, 行, 列]  大写=红方，小写=黑方
+// K帅 k将 A仕 a士 B相 b象 N马 n马 R车 r车 C炮 c炮 P兵 p卒
+const PRACTICE_POSITIONS = [
+    { group: '基本杀法', name: '单马擒孤将', player: 'r', limit: 30, win: 'mate',
+      goal: '马擒单将：马要跳到"日"字的关键点控制将的活动范围，同时用帅"占中"压缩对方空间。要点：帅先占中路，再用马步步紧逼。',
+      pieces: [['K',9,4],['N',7,4],['k',0,4]] },
+    { group: '基本杀法', name: '单车例胜单缺士', player: 'r', limit: 40, win: 'mate',
+      goal: '车对单士：先用帅"白脸将"限制将的活动，再用车将军。要点：车不要急着吃士，先把将逼到边线。',
+      pieces: [['K',9,4],['R',8,3],['k',0,4],['a',0,3]] },
+    { group: '基本杀法', name: '炮镇当头·铁门栓', player: 'r', limit: 3, win: 'mate',
+      goal: '铁门栓：红炮在中路牵制住黑方士象，车沉底将军，将无处可逃。',
+      pieces: [['K',9,4],['C',7,4],['R',8,0],['k',0,4],['a',0,3],['a',0,5]] },
+    { group: '基本杀法', name: '双车错杀', player: 'r', limit: 3, win: 'mate',
+      goal: '双车错：一车封锁肋道，另一车沉底将军；对方将退无可退。',
+      pieces: [['K',9,4],['R',8,0],['R',8,1],['k',0,3],['p',3,4]] },
+
+    { group: '一步杀', name: '马后炮', player: 'r', limit: 1, win: 'mate',
+      goal: '马后炮：马控制将的活动点，炮在马后将军，将无法躲避。',
+      pieces: [['K',9,4],['N',7,4],['C',8,4],['k',0,4]] },
+    { group: '一步杀', name: '车炮抽杀', player: 'r', limit: 1, win: 'mate',
+      goal: '红方先行，一步将杀。提示：炮在中间做炮架，车从底线切入。',
+      pieces: [['K',9,4],['C',7,4],['R',9,0],['k',0,4],['a',0,3]] },
+    { group: '一步杀', name: '重炮杀', player: 'r', limit: 1, win: 'mate',
+      goal: '重炮：两炮同线，前炮做炮架，后炮将军，将无处可逃。',
+      pieces: [['K',9,4],['C',6,4],['C',8,4],['k',0,4]] },
+    { group: '一步杀', name: '闷宫杀', player: 'r', limit: 1, win: 'mate',
+      goal: '闷宫：将被自己的士象堵死，红车一刀封喉。',
+      pieces: [['K',9,4],['R',9,1],['k',0,4],['a',0,3],['a',0,5],['b',0,2],['b',0,6]] },
+
+    { group: '两步杀', name: '卧槽马', player: 'r', limit: 2, win: 'mate',
+      goal: '卧槽马：马跳到 (7,3) 或 (7,5) 附近的卧槽点将军，配合车形成绝杀。',
+      pieces: [['K',9,4],['N',5,4],['R',8,0],['k',0,4],['a',0,3]] },
+    { group: '两步杀', name: '车马冷着', player: 'r', limit: 2, win: 'mate',
+      goal: '红方先行，两步之内将杀。要点：先用马控制将的退路，再动车。',
+      pieces: [['K',9,4],['N',6,3],['R',7,0],['k',0,4],['a',0,5]] },
+    { group: '两步杀', name: '双炮叠杀', player: 'r', limit: 2, win: 'mate',
+      goal: '红方先行，两步之内将杀。要点：先调一个炮到位，再形成重炮。',
+      pieces: [['K',9,4],['C',5,4],['C',9,0],['k',0,4],['a',0,3],['a',0,5]] },
+    { group: '两步杀', name: '车兵巧胜', player: 'r', limit: 2, win: 'mate',
+      goal: '红方先行，两步之内将杀。要点：兵已贴近九宫，车从侧面配合。',
+      pieces: [['K',9,4],['P',2,4],['R',9,0],['k',0,4],['a',0,3]] },
+
+    { group: '三步杀', name: '三步收网', player: 'r', limit: 3, win: 'mate',
+      goal: '红方先行，三步之内将杀。要点：逐步压缩将的活动空间，每一步都不要浪费。',
+      pieces: [['K',9,4],['R',7,0],['N',6,5],['k',0,4],['a',0,3],['a',0,5]] },
+    { group: '三步杀', name: '车炮三手杀', player: 'r', limit: 3, win: 'mate',
+      goal: '红方先行，三步之内将杀。要点：车炮配合，先用炮控制中路，再沉车。',
+      pieces: [['K',9,4],['R',9,0],['C',7,4],['k',0,3],['a',0,4]] },
+
+    { group: '实用残局', name: '单兵巧胜单士', player: 'r', limit: 25, win: 'mate',
+      goal: '兵已过河且贴近九宫：配合帅"占中"，兵步步紧逼，吃掉单士后即可取胜。',
+      pieces: [['K',9,4],['P',3,4],['k',0,4],['a',0,3]] },
+    { group: '实用残局', name: '马低兵胜单士', player: 'r', limit: 30, win: 'mate',
+      goal: '马控制要点、低兵压肋：这是教科书级的必胜残局，需要耐心。',
+      pieces: [['K',9,4],['N',5,3],['P',2,4],['k',0,4],['a',0,3]] },
+    { group: '实用残局', name: '车兵必胜士象全', player: 'r', limit: 50, win: 'mate',
+      goal: '车兵对士象全：经典实用残局，靠车兵配合逐步破防。要点：兵先吃象，车控肋道。',
+      pieces: [['K',9,4],['R',9,0],['P',4,4],['k',0,4],['a',0,3],['a',0,5],['b',0,2],['b',0,6]] },
+    { group: '实用残局', name: '炮双兵士相全', player: 'r', limit: 45, win: 'mate',
+      goal: '炮双兵配合，从两翼渗透。要点：炮要有"架"，兵要贴身。',
+      pieces: [['K',9,4],['C',6,4],['P',3,2],['P',3,6],['k',0,4],['a',0,3],['a',0,5]] }
+];
+
+/* ===================== 主游戏类 ===================== */
+class XiangqiGame {
+    constructor() {
+        this.board = XQ.createInitialBoard();
+        this.currentPlayer = XQ.RED;
+        this.selected = null;
+        this.validMoves = [];
+        this.historyStack = [];
+        this.moveTexts = [];
+        this.moveRecords = [];
+        this.capturedByRed = [];
+        this.capturedByBlack = [];
+        this.lastMove = null;
+        this.gameOver = false;
+        this.isThinking = false;
+        this.isAnimating = false;
+        this.difficulty = 1;
+        this.colorPreference = 'r';
+        this.playerColor = 'r';
+        this.gameMode = 'pvc';
+        this.flipped = false;
+        this.darkMode = false;
+        this.soundOn = true;
+        this.hintOn = false;
+        this.practiceMode = false;
+        this.practiceIndex = 0;
+        this.practiceDone = false;
+        this.undoUsed = 0;
+        this.undoCap = 3;
+        this.undoUsedR = 0;
+        this.undoUsedB = 0;
+        this.hintMove = null;
+        this._hintRunning = false;
+        this._analysisResults = null;
+        this._analysisRunning = false;
+        this.animationToken = 0;
+        this.aiFrame = null;
+        this.aiTimer = null;
+        this._aiGen = 0;
+        this.humanMoved = false;
+        this.pendingConfirm = null;
+        this.pendingSwitch = null;
+        this._checkSoundPlayed = false;
+
+        try {
+            const saved = JSON.parse(localStorage.getItem('xqPrefs') || '{}');
+            const dif = parseInt(saved.difficulty) || 1;
+            this.difficulty = (dif >= 1 && dif <= 3) ? dif : 1;
+            this.undoCap = UNDO_LIMITS[this.difficulty] || 3;
+            this.colorPreference = ['r','x','b'].includes(saved.colorPreference) ? saved.colorPreference : 'r';
+            this.darkMode = saved.darkMode === true;
+            this.soundOn = saved.soundOn !== false;
+            this.hintOn = saved.showHint === true;
+            this.practiceMode = saved.practiceMode === true;
+            const pi = parseInt(saved.practiceIndex);
+            this.practiceIndex = (pi >= 0 && pi < PRACTICE_POSITIONS.length) ? pi : 0;
+        } catch (e) { /* 忽略 */ }
+
+        this.initUI();
+        this.applyDisplayPrefs();
+        this.buildBoardSVG();
+
+        if (this.practiceMode) {
+            this.startPractice(this.practiceIndex);
+        } else {
+            this.newGame(true);
+        }
+    }
+
+    /* ===================== UI 初始化 ===================== */
+    initUI() {
+        this.boardWrapper = document.getElementById('boardWrapper');
+        this.boardFrame = document.getElementById('boardFrame');
+        this.piecesLayer = document.getElementById('piecesLayer');
+        this.marksLayer = document.getElementById('marksLayer');
+        this.statusBarEl = document.getElementById('status');
+        this.statusTextEl = document.getElementById('statusText');
+        this.turnIndicator = document.getElementById('turnIndicator');
+        this.evalScoreEl = document.getElementById('evalScore');
+        this.thinkingIndicator = document.getElementById('thinkingIndicator');
+        this.capturedByBlackEl = document.getElementById('capturedByBlack');
+        this.capturedByRedEl = document.getElementById('capturedByRed');
+        this.oppUndoBtnEl = document.getElementById('oppUndoBtn');
+        this.moveListEl = document.getElementById('moveList');
+        this.moveHistoryEl = document.getElementById('moveHistory');
+        this.moveHistoryTitleEl = document.getElementById('moveHistoryTitle');
+        this.modalEl = document.getElementById('modal');
+        this.modalTitleEl = document.getElementById('modalTitle');
+        this.modalMessageEl = document.getElementById('modalMessage');
+        this.modalPracticeResultEl = document.getElementById('modalPracticeResult');
+        this.modalCloseEl = document.getElementById('modalCloseBtn');
+        this.modalConfirmRowEl = document.getElementById('modalConfirmRow');
+        this.modalPracticeRowEl = document.getElementById('modalPracticeRow');
+        this.modalEndRowEl = document.getElementById('modalEndRow');
+        this.modalSwitchRowEl = document.getElementById('modalSwitchRow');
+        this.modalAnalysisBtnEl = document.getElementById('modalAnalysisBtn');
+        this.toastEl = document.getElementById('toast');
+        this.newGameBtn = document.getElementById('newGameBtn');
+        this.undoBtn = document.getElementById('undoBtn');
+        this.resignBtn = document.getElementById('resignBtn');
+        this.stopAIBtn = document.getElementById('stopAIBtn');
+        this.hintBtnEl = document.getElementById('hintBtn');
+        this.difficultyLabelEl = document.getElementById('difficultyLabel');
+        this.colorSliderEl = document.getElementById('colorSlider');
+        this.colorSliderThumbEl = document.getElementById('colorSliderThumb');
+        this.colorSliderHintEl = document.getElementById('colorSliderHint');
+        this.practicePickBtn = document.getElementById('practicePickBtn');
+        this.practiceBarEl = document.getElementById('practiceBar');
+        this.practiceNameEl = document.getElementById('practiceName');
+        this.practiceProgressEl = document.getElementById('practiceProgress');
+        this.practiceGoalEl = document.getElementById('practiceGoal');
+        this.practiceFillEl = document.getElementById('practiceFill');
+        this.practiceMetaEl = document.getElementById('practiceMeta');
+        this.practicePickerEl = document.getElementById('practicePicker');
+        this.practicePickerListEl = document.getElementById('practicePickerList');
+        this.practicePickerSubEl = document.getElementById('practicePickerSub');
+        this.settingsOverlayEl = document.getElementById('settingsOverlay');
+        this.switchDarkEl = document.getElementById('switchDark');
+        this.switchSoundEl = document.getElementById('switchSound');
+        this.switchHintEl = document.getElementById('switchHint');
+        this.switchPracticeEl = document.getElementById('switchPractice');
+
+        this.updateColorSliderUI();
+        this.restoreDifficultyUI();
+
+        // 棋盘点击
+        this.boardWrapper.addEventListener('click', (e) => this.onBoardClick(e));
+
+        // 折叠走棋记录
+        this.moveHistoryTitleEl.addEventListener('click', () => {
+            this.moveHistoryEl.classList.toggle('collapsed');
+        });
+        // 复盘：点击走棋记录查看评价
+        this.moveListEl.addEventListener('click', (e) => {
+            const el = e.target && e.target.closest ? e.target.closest('.ply') : null;
+            if (!el) return;
+            const ply = parseInt(el.dataset.ply);
+            if (!isNaN(ply) && this._analysisResults) this._showAnalysisForPly(ply);
+        });
+
+        // 按钮
+        this.newGameBtn.addEventListener('click', () => this.confirmNewGame());
+        this.undoBtn.addEventListener('click', () => this.undoMove(this.gameMode === 'pvp' ? this.getBottomColor() : (this.playerColor === 'b' ? XQ.BLACK : XQ.RED), true));
+        if (this.oppUndoBtnEl) this.oppUndoBtnEl.addEventListener('click', () => this.undoMove(this.getTopColor(), false));
+        this.resignBtn.addEventListener('click', () => this.resign());
+        this.stopAIBtn.addEventListener('click', () => this.toggleMode());
+        if (this.hintBtnEl) this.hintBtnEl.addEventListener('click', () => this.showHint());
+        if (this.practicePickBtn) this.practicePickBtn.addEventListener('click', () => this.openPracticePicker());
+
+        // 难度
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lv = parseInt(btn.dataset.level);
+                const lim = UNDO_LIMITS[lv] || 3;
+                if (this.gameMode === 'pvc' && !this.practiceMode && this.undoUsed > lim) {
+                    this.showToast('已悔棋 ' + this.undoUsed + ' 次\n超过「' + btn.textContent + '」上限 ' + lim + ' 次，无法切换');
+                    return;
+                }
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.difficulty = lv;
+                this.undoCap = Math.min(this.undoCap, lim);
+                this.updateControlsState();
+                this.savePrefs();
+            });
+        });
+
+        // 颜色滑块
+        if (this.colorSliderEl) {
+            this.colorSliderEl.querySelectorAll('.color-slider-opt').forEach(b => {
+                b.addEventListener('click', () => this.onColorChange(b.dataset.color));
+            });
+        }
+
+        // 弹窗
+        document.getElementById('modalCancelBtn').addEventListener('click', () => {
+            const fn = this.pendingConfirm; this.pendingConfirm = null; this.hideModal();
+        });
+        document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+            const fn = this.pendingConfirm; this.pendingConfirm = null; this.hideModal();
+            if (fn) fn();
+        });
+        document.getElementById('modalEndCloseBtn').addEventListener('click', () => this.hideModal());
+        document.getElementById('modalRematchBtn').addEventListener('click', () => { this.hideModal(); this.newGame(); });
+        document.getElementById('modalSwitchContinueBtn').addEventListener('click', () => this.hideModal());
+        document.getElementById('modalSwitchEndBtn').addEventListener('click', () => {
+            const fn = this.pendingSwitch; this.pendingSwitch = null; this.hideModal();
+            if (fn) fn();
+        });
+        this.modalCloseEl.addEventListener('click', () => this.hideModal());
+        this.modalEl.addEventListener('click', (e) => { if (e.target === this.modalEl) this.hideModal(); });
+        if (this.modalAnalysisBtnEl) {
+            this.modalAnalysisBtnEl.addEventListener('click', () => {
+                this.hideModal();
+                if (this._analysisRunning) this._stopAnalysis();
+                else startAnalysis(this);
+            });
+        }
+
+        // 练习面板
+        const pRetry = document.getElementById('practiceRetryBtn');
+        const pNext = document.getElementById('practiceNextBtn');
+        const pPrev = document.getElementById('practicePrevBtn');
+        if (pRetry) pRetry.addEventListener('click', () => this.startPractice(this.practiceIndex));
+        if (pNext) pNext.addEventListener('click', () => this.startPractice(this.practiceIndex + 1));
+        if (pPrev) pPrev.addEventListener('click', () => this.startPractice(this.practiceIndex - 1));
+        if (this.practiceNameEl) this.practiceNameEl.addEventListener('click', () => this.openPracticePicker());
+        const pClose = document.getElementById('practicePickerClose');
+        if (pClose) pClose.addEventListener('click', () => this.closePracticePicker());
+        if (this.practicePickerEl) {
+            this.practicePickerEl.addEventListener('click', (e) => {
+                if (e.target === this.practicePickerEl) this.closePracticePicker();
+            });
+        }
+        if (this.practicePickerListEl) {
+            this.practicePickerListEl.addEventListener('click', (e) => {
+                const btn = e.target && e.target.closest ? e.target.closest('.picker-item') : null;
+                if (!btn) return;
+                const idx = parseInt(btn.dataset.idx);
+                this.closePracticePicker();
+                if (!isNaN(idx)) this.startPractice(idx);
+            });
+        }
+        const mpRetry = document.getElementById('modalPracticeRetry');
+        const mpNext = document.getElementById('modalPracticeNext');
+        if (mpRetry) mpRetry.addEventListener('click', () => { this.hideModal(); this.startPractice(this.practiceIndex); });
+        if (mpNext) mpNext.addEventListener('click', () => { this.hideModal(); this.startPractice(this.practiceIndex + 1); });
+
+        // 设置
+        const sClose = document.getElementById('settingsClose');
+        if (sClose) sClose.addEventListener('click', () => this.closeSettings());
+        if (this.settingsOverlayEl) {
+            this.settingsOverlayEl.addEventListener('click', (e) => {
+                if (e.target === this.settingsOverlayEl) this.closeSettings();
+            });
+        }
+        if (this.switchDarkEl) this.switchDarkEl.addEventListener('click', () => this.toggleDark());
+        if (this.switchSoundEl) this.switchSoundEl.addEventListener('click', () => this.toggleSound());
+        if (this.switchHintEl) this.switchHintEl.addEventListener('click', () => this.toggleHint());
+        if (this.switchPracticeEl) this.switchPracticeEl.addEventListener('click', () => this.togglePractice());
+
+        const headerEl = document.querySelector('.header');
+        if (headerEl) this.bindLongPress(headerEl, () => this.openSettings(), 600);
+
+        // 响应式：更新 --cell
+        const updateCell = () => {
+            const w = this.boardWrapper.clientWidth;
+            if (w > 0) this.boardWrapper.style.setProperty('--cell', (w / 9) + 'px');
+        };
+        updateCell();
+        window.addEventListener('resize', updateCell);
+        if (window.ResizeObserver) {
+            new ResizeObserver(updateCell).observe(this.boardWrapper);
+        }
+    }
+
+    restoreDifficultyUI() {
+        document.querySelectorAll('.difficulty-btn').forEach(b => {
+            b.classList.toggle('active', parseInt(b.dataset.level) === this.difficulty);
+        });
+    }
+
+    updateColorSliderUI() {
+        if (!this.colorSliderEl) return;
+        const opts = Array.from(this.colorSliderEl.querySelectorAll('.color-slider-opt'));
+        const idx = Math.max(0, opts.findIndex(o => o.dataset.color === this.colorPreference));
+        opts.forEach((o, i) => o.classList.toggle('active', i === idx));
+        if (this.colorSliderThumbEl) {
+            this.colorSliderThumbEl.style.transform = 'translateX(' + (idx * 100) + '%)';
+        }
+    }
+
+    /* ===================== 棋盘绘制 ===================== */
+    buildBoardSVG() {
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 9 10');
+        svg.setAttribute('class', 'board-svg');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+        const line = (x1, y1, x2, y2, cls) => {
+            const l = document.createElementNS(NS, 'line');
+            l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+            l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+            if (cls) l.setAttribute('class', cls);
+            svg.appendChild(l);
+        };
+
+        for (let r = 0; r < 10; r++) line(0.5, 0.5 + r, 8.5, 0.5 + r);
+        for (let c = 0; c < 9; c++) {
+            if (c === 0 || c === 8) {
+                line(0.5 + c, 0.5, 0.5 + c, 9.5);
+            } else {
+                line(0.5 + c, 0.5, 0.5 + c, 4.5);
+                line(0.5 + c, 5.5, 0.5 + c, 9.5);
+            }
+        }
+        line(3.5, 0.5, 5.5, 2.5); line(5.5, 0.5, 3.5, 2.5);
+        line(3.5, 7.5, 5.5, 9.5); line(5.5, 7.5, 3.5, 9.5);
+        const rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x', 0.5); rect.setAttribute('y', 0.5);
+        rect.setAttribute('width', 8); rect.setAttribute('height', 9);
+        rect.setAttribute('class', 'frame');
+        svg.appendChild(rect);
+
+        const marks = [[3,0],[3,2],[3,4],[3,6],[3,8],[6,0],[6,2],[6,4],[6,6],[6,8],[2,1],[2,7],[7,1],[7,7]];
+        marks.forEach(([r, c]) => {
+            const x = 0.5 + c, y = 0.5 + r;
+            const d = 0.09, g = 0.05;
+            const segs = [];
+            if (c > 0) { segs.push([x - d - g, y - d, x - g, y - d]); segs.push([x - d - g, y + d, x - g, y + d]); }
+            if (c < 8) { segs.push([x + g, y - d, x + d + g, y - d]); segs.push([x + g, y + d, x + d + g, y + d]); }
+            segs.forEach(s => {
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('x1', s[0]); l.setAttribute('y1', s[1]);
+                l.setAttribute('x2', s[2]); l.setAttribute('y2', s[3]);
+                l.setAttribute('stroke-width', '0.022');
+                svg.appendChild(l);
+            });
+        });
+
+        const t1 = document.createElementNS(NS, 'text');
+        t1.setAttribute('x', 2.15); t1.setAttribute('y', 5.0);
+        t1.setAttribute('text-anchor', 'middle');
+        t1.setAttribute('dominant-baseline', 'central');
+        t1.setAttribute('class', 'river-text');
+        t1.textContent = '楚 河';
+        svg.appendChild(t1);
+
+        const t2 = document.createElementNS(NS, 'text');
+        t2.setAttribute('x', 6.85); t2.setAttribute('y', 5.0);
+        t2.setAttribute('text-anchor', 'middle');
+        t2.setAttribute('dominant-baseline', 'central');
+        t2.setAttribute('class', 'river-text');
+        t2.textContent = '汉 界';
+        svg.appendChild(t2);
+
+        this.boardWrapper.insertBefore(svg, this.marksLayer);
+    }
+
+    /* ===================== 坐标换算 ===================== */
+    toDisplay(r, c) {
+        return this.flipped ? [9 - r, 8 - c] : [r, c];
+    }
+    leftPct(r, c) {
+        const d = this.toDisplay(r, c);
+        return ((d[1] + 0.5) / 9) * 100;
+    }
+    topPct(r, c) {
+        const d = this.toDisplay(r, c);
+        return ((d[0] + 0.5) / 10) * 100;
+    }
+
+    onBoardClick(e) {
+        if (this.gameOver || this.isThinking || this.isAnimating) return;
+        if (this.gameMode === 'pvc' && this.currentPlayer !== this.playerColorValue()) return;
+
+        const rect = this.boardWrapper.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width;
+        const py = (e.clientY - rect.top) / rect.height;
+        let dc = Math.round(px * 9 - 0.5);
+        let dr = Math.round(py * 10 - 0.5);
+        if (dc < 0 || dc > 8 || dr < 0 || dr > 9) return;
+        let r = dr, c = dc;
+        if (this.flipped) { r = 9 - dr; c = 8 - dc; }
+        this.handleCellClick(r, c);
+    }
+
+    playerColorValue() { return this.playerColor === 'b' ? XQ.BLACK : XQ.RED; }
+    aiColorValue() { return this.playerColor === 'b' ? XQ.RED : XQ.BLACK; }
+
+    /* 双人模式：棋盘上方(远离当前操作者)一方的颜色 —— 棋子要倒置 180° */
+    getTopColor() {
+        // flipped=false（红方在下方）→ 上方是黑方
+        // flipped=true （黑方在下方）→ 上方是红方
+        return this.flipped ? XQ.RED : XQ.BLACK;
+    }
+    /* 双人模式：棋盘下方(当前操作者)一方的颜色 —— 与 getTopColor 相反 */
+    getBottomColor() {
+        return this.flipped ? XQ.BLACK : XQ.RED;
+    }
+    /* 判断某个棋子是否属于"棋盘上方一方"，需要倒置显示（仅 pvp 模式） */
+    pieceFacingUp(piece) {
+        return this.gameMode === 'pvp' && XQ.getColor(piece) === this.getTopColor();
+    }
+
+    /* ===================== 渲染 ===================== */
+    render() {
+        this._updatePiecesLayer();
+        // 标记层
+        const marksHtml = [];
+        if (this.lastMove && !this.gameOver) {
+            marksHtml.push('<div class="mark-last" style="left:' + this.leftPct(this.lastMove.from[0], this.lastMove.from[1]) +
+                '%;top:' + this.topPct(this.lastMove.from[0], this.lastMove.from[1]) + '%"></div>');
+            marksHtml.push('<div class="mark-last" style="left:' + this.leftPct(this.lastMove.to[0], this.lastMove.to[1]) +
+                '%;top:' + this.topPct(this.lastMove.to[0], this.lastMove.to[1]) + '%"></div>');
+        }
+        if (this.selected) {
+            marksHtml.push('<div class="mark-ring" style="left:' + this.leftPct(this.selected[0], this.selected[1]) +
+                '%;top:' + this.topPct(this.selected[0], this.selected[1]) + '%"></div>');
+        }
+        for (let i = 0; i < this.validMoves.length; i++) {
+            const m = this.validMoves[i];
+            const isCap = m.captured !== 0;
+            marksHtml.push('<div class="' + (isCap ? 'mark-capture' : 'mark-dot') + '" style="left:' +
+                this.leftPct(m.to[0], m.to[1]) + '%;top:' + this.topPct(m.to[0], m.to[1]) + '%"></div>');
+        }
+        const marksKey = marksHtml.join('');
+        if (this._lastMarksHtml !== marksKey) {
+            this._lastMarksHtml = marksKey;
+            this.marksLayer.innerHTML = marksKey;
+        }
+
+        this.updateStatus();
+        this.updateCaptured();
+        this.updateMoveHistory();
+        this.drawHintArrow();
+    }
+
+    /* 重建棋子层 —— 每个棋子带 data-row/data-col 方便动画定位 */
+    _updatePiecesLayer() {
+        if (!this.piecesLayer) return;
+        this.piecesLayer.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        for (let r = 0; r < 10; r++) {
+            for (let c = 0; c < 9; c++) {
+                const p = this.board[r][c];
+                if (p === 0) continue;
+                const el = document.createElement('div');
+                el.className = 'xq-piece ' + (p > 0 ? 'red' : 'black');
+                el.dataset.row = r;
+                el.dataset.col = c;
+                el.style.left = this.leftPct(r, c) + '%';
+                el.style.top = this.topPct(r, c) + '%';
+                el.style.transform = 'translate(-50%,-50%)';
+                // 双人模式：上方一方棋子倒置 180°
+                const glyphCls = this.pieceFacingUp(p) ? 'xq-glyph piece-rotated' : 'xq-glyph';
+                el.innerHTML = '<span class="' + glyphCls + '">' + PIECE_CHARS[p] + '</span>';
+                if (this.selected && this.selected[0] === r && this.selected[1] === c) el.classList.add('selected');
+                if (this.gameOver) el.classList.add('frozen');
+                frag.appendChild(el);
+            }
+        }
+        this.piecesLayer.appendChild(frag);
+    }
+
+    updateStatus() {
+        const inCheck = XQ.isInCheck(this.board, this.currentPlayer);
+        this.boardFrame.classList.toggle('checking', inCheck && !this.gameOver);
+        if (inCheck && !this.gameOver) {
+            this.statusBarEl.classList.add('check-alert');
+            if (!this._checkSoundPlayed) { SoundManager.playCheck(); this._checkSoundPlayed = true; }
+        } else {
+            this.statusBarEl.classList.remove('check-alert');
+            if (!inCheck) this._checkSoundPlayed = false;
+        }
+
+        let turnName;
+        if (this.gameOver) {
+            turnName = '';
+        } else if (this.gameMode === 'pvc') {
+            turnName = this.currentPlayer === this.playerColorValue() ? '您' : 'AI';
+        } else {
+            turnName = this.currentPlayer === XQ.RED ? '红方' : '黑方';
+        }
+        if (this.gameOver) {
+            this.statusTextEl.textContent = '对局结束';
+        } else {
+            this.statusTextEl.textContent = inCheck ? (turnName + '被将军！') : ('轮到' + turnName + '走棋');
+        }
+        this.turnIndicator.className = 'turn-indicator ' + (this.currentPlayer === XQ.RED ? 'red' : 'black');
+
+        const ev = XQ.evaluate(this.board);
+        const myView = this.gameMode === 'pvc' ? this.playerColorValue() : XQ.RED;
+        const myEval = ev * myView;
+        let txt;
+        if (Math.abs(myEval) < 120) txt = '均势';
+        else {
+            const who = myEval > 0 ? '我方' : '对方';
+            const v = (Math.abs(myEval) / 100).toFixed(1);
+            txt = who + '领先 ' + v;
+        }
+        this.evalScoreEl.textContent = this.isThinking ? '' : txt;
+        if (this.isThinking) {
+            this.thinkingIndicator.classList.add('show');
+            this.evalScoreEl.style.display = 'none';
+        } else {
+            this.thinkingIndicator.classList.remove('show');
+            this.evalScoreEl.style.display = '';
+        }
+    }
+
+    updateCaptured() {
+        const fmt = (arr) => arr.map(p => {
+            const red = p > 0;
+            return '<span class="cap-piece ' + (red ? 'red' : 'black') + '">' + PIECE_CHARS[p] + '</span>';
+        }).join('');
+        const topArr = this.flipped ? this.capturedByRed : this.capturedByBlack;
+        const botArr = this.flipped ? this.capturedByBlack : this.capturedByRed;
+        const topHtml = fmt(topArr);
+        const botHtml = fmt(botArr);
+        if (this._capTop !== topHtml) { this._capTop = topHtml; this.capturedByBlackEl.innerHTML = topHtml; }
+        if (this._capBot !== botHtml) { this._capBot = botHtml; this.capturedByRedEl.innerHTML = botHtml; }
+    }
+
+    updateMoveHistory() {
+        let html = '';
+        const last = this.moveTexts.length - 1;
+        for (let i = 0; i < this.moveTexts.length; i += 2) {
+            const num = Math.floor(i / 2) + 1;
+            const a = this.moveTexts[i] || '';
+            const b = this.moveTexts[i + 1] || '';
+            const isLast = (i === last || i + 1 === last);
+            html += '<span class="move-entry' + (isLast ? ' cur' : '') + '">' + num + '.';
+            if (a) html += '<span class="ply" data-ply="' + i + '">' + a + '</span>';
+            if (b) html += '<span class="ply" data-ply="' + (i + 1) + '">' + b + '</span>';
+            html += '</span>';
+        }
+        if (this._lastMoveHtml !== html) {
+            this._lastMoveHtml = html;
+            this.moveListEl.innerHTML = html;
+            this.moveListEl.scrollTop = this.moveListEl.scrollHeight;
+        }
+    }
+
+    drawHintArrow() {
+        const old = this.boardWrapper.querySelector('.hint-arrow-svg');
+        if (old) old.remove();
+        if (!this.hintMove || this.gameOver) return;
+        const a = this.hintMove.from, b = this.hintMove.to;
+        const x1 = this.leftPct(a[0], a[1]), y1 = this.topPct(a[0], a[1]);
+        const x2 = this.leftPct(b[0], b[1]), y2 = this.topPct(b[0], b[1]);
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'hint-arrow-svg');
+        svg.setAttribute('viewBox', '0 0 100 100');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        const defs = document.createElementNS(svgNS, 'defs');
+        const marker = document.createElementNS(svgNS, 'marker');
+        marker.setAttribute('id', 'xqArrowHead');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('refX', '5');
+        marker.setAttribute('refY', '3');
+        marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('d', 'M0,0 L6,3 L0,6 z');
+        path.setAttribute('fill', '#9ca3af');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const sx = x1 + ux * 4, sy = y1 + uy * 4;
+        const ex = x2 - ux * 5, ey = y2 - uy * 5;
+
+        const l = document.createElementNS(svgNS, 'line');
+        l.setAttribute('x1', sx); l.setAttribute('y1', sy);
+        l.setAttribute('x2', ex); l.setAttribute('y2', ey);
+        l.setAttribute('stroke', '#9ca3af');
+        l.setAttribute('stroke-width', '0.9');
+        l.setAttribute('stroke-linecap', 'round');
+        l.setAttribute('marker-end', 'url(#xqArrowHead)');
+        svg.appendChild(l);
+        this.boardWrapper.appendChild(svg);
+    }
+
+    /* ===================== 交互 ===================== */
+    handleCellClick(r, c) {
+        const p = this.board[r][c];
+        if (this.selected) {
+            const mv = this.validMoves.find(m => m.to[0] === r && m.to[1] === c);
+            if (mv) {
+                this.selected = null;
+                this.validMoves = [];
+                this.executeMoveWithAnimation(mv, true);
+                return;
+            }
+        }
+        if (p !== 0 && XQ.getColor(p) === this.currentPlayer) {
+            this.selected = [r, c];
+            this.validMoves = XQ.legalMoves(this.board, this.currentPlayer)
+                .filter(m => m.from[0] === r && m.from[1] === c);
+            this.render();
+        } else {
+            this.selected = null;
+            this.validMoves = [];
+            this.render();
+        }
+    }
+
+    saveState() {
+        this.historyStack.push({
+            board: XQ.cloneBoard(this.board),
+            currentPlayer: this.currentPlayer,
+            capturedByRed: this.capturedByRed.slice(),
+            capturedByBlack: this.capturedByBlack.slice(),
+            lastMove: this.lastMove ? { from: this.lastMove.from.slice(), to: this.lastMove.to.slice(), piece: this.lastMove.piece, captured: this.lastMove.captured } : null,
+            moveTexts: this.moveTexts.slice(),
+            moveRecords: this.moveRecords.slice()
+        });
+    }
+
+    /* ===================== 走子（带滑动动画） ===================== */
+    async executeMoveWithAnimation(move, isHuman) {
+        if (this.isAnimating) return;
+        const token = ++this.animationToken;
+        this.isAnimating = true;
+        if (isHuman) this.humanMoved = true;
+        this.selected = null;
+        this.validMoves = [];
+        this.render();   // 立即清掉选中高亮与落点灰点
+
+        this.saveState();
+
+        const piece = this.board[move.from[0]][move.from[1]];
+        const isCapture = move.captured !== 0;
+        const wasFacingUp = this.pieceFacingUp(piece);
+
+        // 起点与终点的百分比位置
+        const fromLeft = this.leftPct(move.from[0], move.from[1]);
+        const fromTop = this.topPct(move.from[0], move.from[1]);
+        const toLeft = this.leftPct(move.to[0], move.to[1]);
+        const toTop = this.topPct(move.to[0], move.to[1]);
+
+        // 创建动画棋子（放在 boardWrapper 里，避免被 render() 重建时清掉）
+        const animPiece = document.createElement('div');
+        animPiece.className = 'xq-piece animating-piece ' + (piece > 0 ? 'red' : 'black') + (isHuman ? '' : ' ai-anim');
+        animPiece.style.left = fromLeft + '%';
+        animPiece.style.top = fromTop + '%';
+        animPiece.style.transform = 'translate(-50%,-50%)';
+        const glyphCls = wasFacingUp ? 'xq-glyph piece-rotated' : 'xq-glyph';
+        animPiece.innerHTML = '<span class="' + glyphCls + '">' + PIECE_CHARS[piece] + '</span>';
+        this.boardWrapper.appendChild(animPiece);
+
+        // 隐藏起点棋子（piecesLayer 中对应位置的元素）
+        const startEl = this.piecesLayer.querySelector('.xq-piece[data-row="' + move.from[0] + '"][data-col="' + move.from[1] + '"]');
+        if (startEl) startEl.style.visibility = 'hidden';
+
+        // 等待一帧，让起点位置渲染出来
+        await new Promise(resolve => {
+            const rafId = requestAnimationFrame(resolve);
+            setTimeout(() => { cancelAnimationFrame(rafId); resolve(); }, 50);
+        });
+        if (token !== this.animationToken) {
+            animPiece.remove();
+            this.isAnimating = false;
+            return;
+        }
+
+        // 触发过渡：改为终点位置
+        animPiece.style.left = toLeft + '%';
+        animPiece.style.top = toTop + '%';
+
+        // 等待过渡完成（与 CSS .animating-piece 的 transition 时长一致）
+        const animDuration = isHuman ? 320 : 380;
+        await new Promise(resolve => setTimeout(resolve, animDuration));
+        if (token !== this.animationToken) {
+            animPiece.remove();
+            this.isAnimating = false;
+            return;
+        }
+
+        // 移除动画棋子
+        animPiece.remove();
+
+        // 音效
+        if (isCapture) SoundManager.playCapture();
+        else SoundManager.playMove();
+
+        // 应用走子（更新棋盘状态 + 重建棋子层）
+        this._applyMove(move);
+        this.isAnimating = false;
+
+        // 走子后处理（练习模式判定 / 终局判定 / AI 调度）
+        this._afterMove(move, piece, isCapture);
+    }
+
+    _applyMove(move) {
+        const piece = this.board[move.from[0]][move.from[1]];
+        const isCapture = move.captured !== 0;
+        this.lastMove = move;
+
+        this.board[move.to[0]][move.to[1]] = piece;
+        this.board[move.from[0]][move.from[1]] = 0;
+
+        if (isCapture) {
+            if (move.captured > 0) this.capturedByBlack.push(move.captured);
+            else this.capturedByRed.push(move.captured);
+        }
+
+        const text = this.moveToChinese(move, piece);
+        this.moveTexts.push(text);
+        this.moveRecords.push({
+            from: move.from.slice(), to: move.to.slice(), piece: piece, captured: move.captured, text: text
+        });
+
+        this.currentPlayer = -this.currentPlayer;
+        this.hintMove = null;
+        this._lastMarksHtml = null;
+
+        this.render();
+        this.updateControlsState();
+    }
+
+    _afterMove(move, piece, isCapture) {
+        // 练习模式判定
+        if (this.practiceMode && !this.practiceDone) {
+            const ex = PRACTICE_POSITIONS[this.practiceIndex];
+            const justMoved = (piece > 0 && this.playerColor === 'r') || (piece < 0 && this.playerColor === 'b');
+            if (justMoved) {
+                const used = this.practiceUsed();
+                if (used > ex.limit) {
+                    this.practiceFinish(false, '超过步数上限了，再试一次吧。');
+                    return;
+                }
+            }
+        }
+
+        if (this.checkGameEnd()) return;
+
+        if (this.gameMode === 'pvc' && this.currentPlayer === this.aiColorValue()) {
+            this.scheduleAI();
+        }
+    }
+
+    practiceUsed() {
+        const startIdx = this.playerColor === 'r' ? 0 : 1;
+        let n = 0;
+        for (let i = startIdx; i < this.moveTexts.length; i += 2) n++;
+        return n;
+    }
+
+    /* ===================== 中文记谱 ===================== */
+    moveToChinese(move, piece) {
+        const t = XQ.getType(piece);
+        const isRed = piece > 0;
+        const fr = move.from[0], fc = move.from[1];
+        const tr = move.to[0], tc = move.to[1];
+        const name = PIECE_CHARS[piece];
+
+        const fileStr = (col) => isRed ? CN_NUM[8 - col] : String(col + 1);
+        let action, target;
+        if (fr === tr) {
+            action = '平';
+            target = fileStr(tc);
+        } else {
+            const forward = isRed ? (tr < fr) : (tr > fr);
+            action = forward ? '进' : '退';
+            if (t === XQ.HORSE || t === XQ.ELEPHANT || t === XQ.ADVISOR) {
+                target = fileStr(tc);
+            } else {
+                const steps = Math.abs(tr - fr);
+                target = isRed ? CN_NUM[steps - 1] : String(steps);
+            }
+        }
+        return name + fileStr(fc) + action + target;
+    }
+
+    /* ===================== 胜负判定 ===================== */
+    checkGameEnd() {
+        if (this.gameOver) return true;
+        const moves = XQ.legalMoves(this.board, this.currentPlayer);
+        if (moves.length === 0) {
+            this.gameOver = true;
+            const inCheck = XQ.isInCheck(this.board, this.currentPlayer);
+            const winnerColor = -this.currentPlayer;
+
+            if (this.practiceMode) {
+                const won = winnerColor === this.playerColorValue();
+                this.practiceFinish(won, won ? '漂亮的将杀！' : (inCheck ? '被对方将杀了，再试一次。' : '被困毙了，再试一次。'));
+                return true;
+            }
+
+            let winName = winnerColor === XQ.RED ? '红方' : '黑方';
+            if (this.gameMode === 'pvc' && winnerColor === this.aiColorValue()) winName = 'AI';
+            const reason = inCheck ? '将杀！' : '困毙！';
+            this.showModal(reason, winName + '获胜！', 'end');
+            SoundManager.playGameEnd();
+            this.clearSavedGame();
+            this.updateControlsState();
+            this.render();
+            return true;
+        }
+        return false;
+    }
+
+    /* ===================== AI ===================== */
+    scheduleAI() {
+        if (this.gameMode !== 'pvc') return;
+        this.isThinking = true;
+        this.render();
+        const gen = ++this._aiGen;
+        const color = this.aiColorValue();
+        const level = this.difficulty;
+
+        let started = false;
+        const start = () => {
+            if (started) return;
+            started = true;
+            if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
+            if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
+            if (gen !== this._aiGen) { this.isThinking = false; this.render(); return; }
+
+            let move = null;
+            try {
+                move = XQ.findBestMove(this.board, color, level);
+            } catch (e) { move = null; }
+
+            if (gen !== this._aiGen) { this.isThinking = false; this.render(); return; }
+            this.isThinking = false;
+            if (!move) {
+                this.render();
+                this.checkGameEnd();
+                return;
+            }
+            this.executeMoveWithAnimation(move, false);
+        };
+        this.aiFrame = requestAnimationFrame(start);
+        this.aiTimer = setTimeout(start, 120);
+    }
+
+    /* ===================== 悔棋 ===================== */
+    undoMove(byColor, isBottom) {
+        if (this.gameOver) { this.showToast('对局已结束，请点"新对局"重开'); return; }
+        if (this.isAnimating) return;
+        if (this.historyStack.length === 0) { this.showToast('没有可悔的棋'); return; }
+
+        // 双人模式：只能悔自己刚走的那一步
+        if (this.gameMode === 'pvp' && byColor !== undefined) {
+            if (this.currentPlayer === byColor) {
+                this.showToast('您还没走棋，无法悔棋', !isBottom);
+                return;
+            }
+        }
+
+        const undoBy = (byColor !== undefined && byColor !== null) ? byColor
+            : (this.gameMode === 'pvp' ? -this.currentPlayer : this.playerColorValue());
+
+        // 执黑时红方刚走完第一步 → 无玩家自己的棋可悔
+        if (this.gameMode === 'pvc' && this.playerColor === 'b' && this.moveTexts.length <= 1) {
+            this.showToast('你还没走棋，无法悔棋');
+            return;
+        }
+
+        if (!this.practiceMode) {
+            if (this.gameMode === 'pvp') {
+                const used = undoBy === XQ.RED ? this.undoUsedR : this.undoUsedB;
+                if (3 - used <= 0) { this.showToast('悔棋次数已用完（上限 3 次）', !isBottom); return; }
+            } else {
+                if (this.undoLeft() <= 0) {
+                    this.showToast('本局悔棋次数已用完（上限 ' + this.undoLimit() + ' 次）');
+                    return;
+                }
+            }
+        }
+
+        this.animationToken++;
+        if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
+        if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
+        this._aiGen++;
+        this.isThinking = false;
+        this.isAnimating = false;
+        // 清掉可能残留的动画棋子
+        this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+
+        let pops = 1;
+        if (this.gameMode === 'pvc' && this.currentPlayer === this.playerColorValue() && this.historyStack.length >= 2) {
+            pops = 2;
+        }
+        if (this.practiceMode) pops = 1;
+
+        let target = null;
+        for (let i = 0; i < pops; i++) {
+            if (this.historyStack.length === 0) break;
+            target = this.historyStack.pop();
+        }
+        if (!target) { this.showToast('没有可悔的棋'); return; }
+
+        this.board = target.board;
+        this.currentPlayer = target.currentPlayer;
+        this.capturedByRed = target.capturedByRed;
+        this.capturedByBlack = target.capturedByBlack;
+        this.lastMove = target.lastMove;
+        this.moveTexts = target.moveTexts;
+        this.moveRecords = target.moveRecords;
+        this.gameOver = false;
+        this.selected = null;
+        this.validMoves = [];
+        this.hintMove = null;
+        this._lastMarksHtml = null;
+        this._lastMoveHtml = null;
+        this._analysisResults = null;
+        this._checkSoundPlayed = false;
+
+        this.render();
+        this.updateControlsState();
+
+        if (this.practiceMode) this.updatePracticeUI();
+
+        if (!this.practiceMode) {
+            if (this.gameMode === 'pvp') {
+                if (undoBy === XQ.RED) this.undoUsedR++; else this.undoUsedB++;
+                const left = Math.max(0, 3 - (undoBy === XQ.RED ? this.undoUsedR : this.undoUsedB));
+                this.showToast(left > 0 ? ('已悔棋，还剩 ' + left + ' 次') : '已悔棋，次数用完', !isBottom);
+            } else {
+                this.undoUsed++;
+                this.showToast(this.undoLeft() > 0 ? ('已悔棋，本局还剩 ' + this.undoLeft() + ' 次') : '已悔棋，本局次数已用完');
+            }
+        } else {
+            this.showToast('已悔棋（练习模式不限次数）');
+        }
+    }
+
+    undoLimit() {
+        if (this.gameMode === 'pvp') return 3;
+        const cap = (Number.isFinite(this.undoCap) && this.undoCap > 0) ? this.undoCap : (UNDO_LIMITS[this.difficulty] || 3);
+        return cap;
+    }
+    undoLeft() {
+        if (this.gameMode === 'pvp') {
+            const used = this.currentPlayer === XQ.RED ? this.undoUsedR : this.undoUsedB;
+            return Math.max(0, 3 - used);
+        }
+        return Math.max(0, this.undoLimit() - this.undoUsed);
+    }
+
+    updateControlsState() {
+        if (this.resignBtn) {
+            this.resignBtn.disabled = this.gameOver;
+            this.resignBtn.textContent = this.practiceMode ? '放弃本题' : '认输';
+        }
+        if (this.newGameBtn) this.newGameBtn.textContent = this.practiceMode ? '重开本题' : '新对局';
+        if (this.difficultyLabelEl) this.difficultyLabelEl.textContent = this.practiceMode ? '对手强度' : '难度';
+
+        if (this.undoBtn) {
+            const noSteps = this.historyStack.length === 0;
+            const mine = this.gameMode === 'pvp' ? this.getBottomColor() : this.playerColorValue();
+            const left = this.gameMode === 'pvp'
+                ? 3 - (mine === XQ.RED ? this.undoUsedR : this.undoUsedB)
+                : (this.practiceMode ? Infinity : this.undoLeft());
+            const notMyTurn = this.gameMode === 'pvp' && this.currentPlayer === mine;
+            this.undoBtn.disabled = this.gameOver || noSteps || left <= 0 || notMyTurn;
+            this.undoBtn.textContent = '悔棋';
+        }
+        // 双人模式：对方（棋盘上方那方）悔棋按钮，同样按对方剩余次数+可悔判定 disable
+        if (this.oppUndoBtnEl) {
+            const topColor = this.getTopColor();
+            const topLeft = 3 - (topColor === XQ.RED ? this.undoUsedR : this.undoUsedB);
+            const oppNoSteps = this.historyStack.length === 0;
+            const oppNotTheirTurn = this.gameMode === 'pvp' && this.currentPlayer === topColor;
+            this.oppUndoBtnEl.disabled = this.gameOver || oppNoSteps || topLeft <= 0 || oppNotTheirTurn;
+        }
+        if (this.stopAIBtn) {
+            this.stopAIBtn.disabled = this.gameOver || this.practiceMode;
+            this.stopAIBtn.style.opacity = this.practiceMode ? '0.45' : '';
+            if (!this.practiceMode) {
+                this.stopAIBtn.textContent = (this.gameMode === 'pvp') ? '人机模式' : '双人模式';
+            }
+        }
+        // 双人模式：给 body 加 pvp 类，让 CSS 隐藏难度档
+        document.body.classList.toggle('pvp', this.gameMode === 'pvp');
+    }
+
+    /* ===================== 模式 / 认输 / 新局 ===================== */
+    confirmNewGame() {
+        if (this.practiceMode) { this.startPractice(this.practiceIndex); return; }
+        this.showModal('新对局', '确定要开始一局新对局吗？当前对局进度将被清除。', 'confirm',
+            () => this.newGame(), '继续');
+    }
+
+    newGame(silent) {
+        if (this.practiceMode) { this.startPractice(this.practiceIndex); return; }
+
+        if (this._analysisRunning) this._stopAnalysis();
+        this._analysisResults = null;
+
+        this.undoUsed = 0;
+        this.undoCap = this.gameMode === 'pvp' ? 3 : (UNDO_LIMITS[this.difficulty] || 3);
+        this.undoUsedR = 0;
+        this.undoUsedB = 0;
+
+        this.animationToken++;
+        if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
+        if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
+        this._aiGen++;
+        this.isThinking = false;
+        this.isAnimating = false;
+        this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+
+        if (this.gameMode === 'pvc') {
+            this.playerColor = this.colorPreference === 'x'
+                ? (Math.random() < 0.5 ? 'r' : 'b')
+                : this.colorPreference;
+        } else {
+            this.playerColor = 'r';
+        }
+        this.flipped = (this.gameMode === 'pvc' && this.playerColor === 'b');
+
+        this.board = XQ.createInitialBoard();
+        this.currentPlayer = XQ.RED;
+        this.selected = null;
+        this.validMoves = [];
+        this.historyStack = [];
+        this.moveTexts = [];
+        this.moveRecords = [];
+        this.capturedByRed = [];
+        this.capturedByBlack = [];
+        this.lastMove = null;
+        this.gameOver = false;
+        this.hintMove = null;
+        this.humanMoved = false;
+        this._checkSoundPlayed = false;
+        this._lastMarksHtml = null;
+        this._lastMoveHtml = null;
+        this._capTop = null;
+        this._capBot = null;
+
+        this.updateColorSliderUI();
+        this.updateControlsState();
+        this.render();
+        this.hideModal();
+        if (!silent) this.clearSavedGame();
+
+        if (this.gameMode === 'pvc' && this.currentPlayer === this.aiColorValue()) {
+            this.scheduleAI();
+        }
+    }
+
+    toggleMode() {
+        if (this.practiceMode) { this.showToast('练习模式固定为人机对练'); return; }
+        const toPvp = this.gameMode === 'pvc';
+        this.pendingSwitch = () => {
+            this.animationToken++;
+            this._aiGen++;
+            this.isThinking = false;
+            this.isAnimating = false;
+            this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+            this.gameMode = toPvp ? 'pvp' : 'pvc';
+            this.newGame(true);
+            this.showToast(toPvp ? '已切换到双人对战' : '已切换回人机对战');
+        };
+        this.showModal(toPvp ? '切换到双人对战' : '切换回人机对战',
+            toPvp ? '将结束当前人机对局并新开一局双人对战。' : '将结束当前双人对局并新开一局人机对战。',
+            'switch');
+    }
+
+    resign() {
+        if (this.gameOver) return;
+        if (this.practiceMode) {
+            this.showModal('放弃本题', '确定要放弃当前这道练习题吗？', 'confirm',
+                () => this.practiceFinish(false, '已放弃本题，可以再来一次。'));
+            return;
+        }
+        this.showModal('认输', this.gameMode === 'pvp' ? '确定要认输吗？' : '确定要认输吗？（本局判负）',
+            'confirm', () => this.doResign(), '继续');
+    }
+
+    doResign() {
+        if (this.gameOver) return;
+        this.animationToken++;
+        this._aiGen++;
+        this.isThinking = false;
+        this.isAnimating = false;
+        this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+        this.gameOver = true;
+        this.hintMove = null;
+
+        let winner;
+        if (this.gameMode === 'pvp') {
+            winner = this.currentPlayer === XQ.RED ? '黑方' : '红方';
+        } else {
+            winner = 'AI（' + (this.playerColor === 'r' ? '黑方' : '红方') + '）';
+        }
+        this.showModal('认输', winner + '获胜！', 'end');
+        SoundManager.playGameEnd();
+        this.clearSavedGame();
+        this.updateControlsState();
+        this.render();
+    }
+
+    /* ===================== 颜色切换 ===================== */
+    onColorChange(pref) {
+        if (this.colorPreference === pref) return;
+        this.colorPreference = pref;
+        this.savePrefs();
+        const canApplyNow = !this.humanMoved && !this.gameOver;
+        if (!canApplyNow) {
+            this.updateColorSliderUI();
+            if (!this.gameOver) this.showColorHint('新颜色将在下一局生效');
+            return;
+        }
+        this.updateColorSliderUI();
+        this.newGame(true);
+    }
+
+    showColorHint(text) {
+        if (!this.colorSliderHintEl) return;
+        this.colorSliderHintEl.textContent = text;
+        this.colorSliderHintEl.classList.add('show');
+        if (this._colorHintTimer) clearTimeout(this._colorHintTimer);
+        this._colorHintTimer = setTimeout(() => this.colorSliderHintEl.classList.remove('show'), 2500);
+    }
+
+    /* ===================== 设置 ===================== */
+    savePrefs() {
+        try {
+            localStorage.setItem('xqPrefs', JSON.stringify({
+                difficulty: this.difficulty,
+                colorPreference: this.colorPreference,
+                darkMode: this.darkMode,
+                soundOn: this.soundOn,
+                showHint: this.hintOn,
+                practiceMode: this.practiceMode,
+                practiceIndex: this.practiceIndex
+            }));
+        } catch (e) { /* 忽略 */ }
+    }
+
+    applyDisplayPrefs() {
+        SoundManager.setMuted(!this.soundOn);
+        document.body.classList.toggle('dark', !!this.darkMode);
+        document.body.classList.toggle('show-hint', !!this.hintOn);
+        document.body.classList.toggle('practice', !!this.practiceMode);
+        this.updateSettingsUI();
+    }
+
+    updateSettingsUI() {
+        const sync = (el, on) => {
+            if (!el) return;
+            el.classList.toggle('on', !!on);
+            el.setAttribute('aria-checked', on ? 'true' : 'false');
+        };
+        sync(this.switchDarkEl, this.darkMode);
+        sync(this.switchSoundEl, this.soundOn);
+        sync(this.switchHintEl, this.hintOn);
+        sync(this.switchPracticeEl, this.practiceMode);
+    }
+
+    openSettings() { if (this.settingsOverlayEl) this.settingsOverlayEl.classList.add('show'); }
+    closeSettings() { if (this.settingsOverlayEl) this.settingsOverlayEl.classList.remove('show'); }
+
+    toggleDark() {
+        this.darkMode = !this.darkMode;
+        this.applyDisplayPrefs();
+        this.savePrefs();
+        this.showToast(this.darkMode ? '已切换深色模式' : '已切换浅色模式');
+    }
+    toggleSound() {
+        this.soundOn = !this.soundOn;
+        SoundManager.setMuted(!this.soundOn);
+        this.updateSettingsUI();
+        this.savePrefs();
+        if (this.soundOn) SoundManager.playMove();
+        this.showToast(this.soundOn ? '已开启音效' : '已关闭音效');
+    }
+    toggleHint() {
+        this.hintOn = !this.hintOn;
+        this.applyDisplayPrefs();
+        this.savePrefs();
+        this.showToast(this.hintOn ? '已开启提示按钮' : '已关闭提示按钮');
+    }
+    togglePractice() {
+        this.practiceMode = !this.practiceMode;
+        this.applyDisplayPrefs();
+        this.savePrefs();
+        this.hintMove = null;
+        if (this.practiceMode) {
+            this.showToast('练习模式已开启');
+            this.startPractice(this.practiceIndex);
+        } else {
+            this.showToast('已退出练习模式');
+            this.newGame(true);
+        }
+    }
+
+    bindLongPress(el, fn, ms) {
+        const hold = ms || 600;
+        const start = () => {
+            this._cancelLongPress();
+            this._lpTimer = setTimeout(() => { this._lpTimer = null; fn(); }, hold);
+        };
+        const cancel = () => this._cancelLongPress();
+        el.addEventListener('touchstart', start, { passive: true });
+        el.addEventListener('touchend', cancel);
+        el.addEventListener('touchcancel', cancel);
+        el.addEventListener('touchmove', cancel, { passive: true });
+        el.addEventListener('mousedown', start);
+        el.addEventListener('mouseup', cancel);
+        el.addEventListener('mouseleave', cancel);
+        el.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    _cancelLongPress() {
+        if (this._lpTimer) { clearTimeout(this._lpTimer); this._lpTimer = null; }
+    }
+
+    /* ===================== 提示 ===================== */
+    showHint() {
+        if (this.gameOver || this.isAnimating || this._hintRunning) return;
+        if (this.gameMode === 'pvc' && this.currentPlayer !== this.playerColorValue()) {
+            this.showToast('现在轮到对方走棋');
+            return;
+        }
+        if (this.hintMove && this._hintPly === this.moveTexts.length) {
+            this.render();
+            this.showToast('已标出建议走法');
+            return;
+        }
+        this._hintRunning = true;
+        if (this.hintBtnEl) this.hintBtnEl.classList.add('busy');
+        this.showToast('正在为你思考…');
+        const token = this.animationToken;
+        const color = this.currentPlayer;
+        setTimeout(() => {
+            let move = null;
+            try { move = XQ.findBestMove(this.board, color, 3); } catch (e) { move = null; }
+            this._hintRunning = false;
+            if (this.hintBtnEl) this.hintBtnEl.classList.remove('busy');
+            if (token !== this.animationToken) return;
+            if (!move) { this.showToast('暂时没有可走的着法'); return; }
+            this.hintMove = move;
+            this._hintPly = this.moveTexts.length;
+            this.render();
+            this.showToast('已标出建议走法');
+        }, 40);
+    }
+
+    /* ===================== 弹窗 / Toast ===================== */
+    showModal(title, message, mode, confirmFn, cancelText) {
+        if (mode === 'end') this.clearSavedGame();
+        this.modalTitleEl.textContent = title;
+        this.modalMessageEl.textContent = message || '';
+        this.pendingConfirm = confirmFn || null;
+        this.modalCloseEl.style.display = (mode === 'plain') ? 'inline-block' : 'none';
+        this.modalConfirmRowEl.classList.toggle('show', mode === 'confirm');
+        const cancelBtn = document.getElementById('modalCancelBtn');
+        if (cancelBtn) cancelBtn.textContent = cancelText || '取消';
+        this.modalEndRowEl.classList.toggle('show', mode === 'end');
+        if (this.modalPracticeRowEl) this.modalPracticeRowEl.classList.toggle('show', mode === 'practice');
+        if (this.modalSwitchRowEl) this.modalSwitchRowEl.classList.toggle('show', mode === 'switch');
+        if (this.modalPracticeResultEl && mode !== 'practice') {
+            this.modalPracticeResultEl.classList.remove('show');
+            this.modalPracticeResultEl.innerHTML = '';
+            this.modalEl.classList.remove('practice-ok', 'practice-fail');
+        }
+        this.modalEl.classList.add('show');
+    }
+
+    hideModal() {
+        this.modalEl.classList.remove('show');
+        this.pendingConfirm = null;
+    }
+
+    showToast(text, flip, duration) {
+        if (!this.toastEl) return;
+        this.toastEl.textContent = text;
+        this.toastEl.style.top = '';
+        this.toastEl.style.bottom = '';
+        // 双人模式：提示贴到棋盘边上（各贴自己那一侧）
+        if (this.gameMode === 'pvp' && this.boardWrapper) {
+            const br = this.boardWrapper.getBoundingClientRect();
+            if (flip) this.toastEl.style.top = Math.max(8, Math.round(br.top) - 52) + 'px';
+            else this.toastEl.style.top = Math.round(br.bottom) + 10 + 'px';
+        }
+        this.toastEl.classList.toggle('toast-flip', !!flip);
+        this.toastEl.classList.add('show');
+        if (this._toastTimer) clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => {
+            this.toastEl.classList.remove('show');
+            this.toastEl.classList.remove('toast-flip');
+        }, duration || 2200);
+    }
+
+    clearSavedGame() {
+        try { localStorage.removeItem('xqSavedGame'); } catch (e) { /* 忽略 */ }
+    }
+
+    /* ===================== 练习模式 ===================== */
+    startPractice(index) {
+        const n = PRACTICE_POSITIONS.length;
+        this.practiceIndex = ((index % n) + n) % n;
+        const ex = PRACTICE_POSITIONS[this.practiceIndex];
+
+        this.undoUsed = 0;
+        this.animationToken++;
+        this._aiGen++;
+        this.isThinking = false;
+        this.isAnimating = false;
+        if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
+        if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
+        this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+
+        const map = { K: XQ.KING, A: XQ.ADVISOR, B: XQ.ELEPHANT, N: XQ.HORSE, R: XQ.CHARIOT, C: XQ.CANNON, P: XQ.PAWN };
+        const b = Array.from({ length: 10 }, () => new Array(9).fill(0));
+        for (let i = 0; i < ex.pieces.length; i++) {
+            const item = ex.pieces[i];
+            const ch = String(item[0]).toUpperCase();
+            const rr = item[1], cc = item[2];
+            if (map[ch] === undefined) continue;
+            const isRed = String(item[0]) === ch;
+            b[rr][cc] = isRed ? map[ch] : -map[ch];
+        }
+
+        this.board = b;
+        this.playerColor = ex.player;
+        this.flipped = (ex.player === 'b');
+        this.currentPlayer = (ex.player === 'r') ? XQ.RED : XQ.BLACK;
+        this.selected = null;
+        this.validMoves = [];
+        this.historyStack = [];
+        this.moveTexts = [];
+        this.moveRecords = [];
+        this.capturedByRed = [];
+        this.capturedByBlack = [];
+        this.lastMove = null;
+        this.gameOver = false;
+        this.hintMove = null;
+        this.practiceDone = false;
+        this.humanMoved = false;
+        this._checkSoundPlayed = false;
+        this._lastMarksHtml = null;
+        this._lastMoveHtml = null;
+        this._capTop = null;
+        this._capBot = null;
+        this._analysisResults = null;
+        this.gameMode = 'pvc';
+
+        this.clearSavedGame();
+        this.updateControlsState();
+        this.updatePracticeUI();
+        this.render();
+        this.hideModal();
+
+        if (this.currentPlayer === this.aiColorValue()) this.scheduleAI();
+    }
+
+    updatePracticeUI() {
+        if (!this.practiceBarEl) return;
+        const ex = PRACTICE_POSITIONS[this.practiceIndex];
+        if (!ex) return;
+        const used = this.practiceUsed();
+        const inGroup = PRACTICE_POSITIONS.slice(0, this.practiceIndex + 1).filter(e => e.group === ex.group).length;
+        const groupTotal = PRACTICE_POSITIONS.filter(e => e.group === ex.group).length;
+        this.practiceNameEl.textContent = ex.name + '（你执' + (ex.player === 'r' ? '红' : '黑') + '）';
+        this.practiceProgressEl.textContent = '已用 ' + used + ' / ' + ex.limit + ' 步';
+        if (this.practiceMetaEl) {
+            this.practiceMetaEl.textContent = ex.group + ' ' + inGroup + '/' + groupTotal +
+                ' · 全库第 ' + (this.practiceIndex + 1) + '/' + PRACTICE_POSITIONS.length + ' 题';
+        }
+        this.practiceGoalEl.textContent = ex.goal;
+        if (this.practiceFillEl) {
+            const pct = Math.min(100, Math.round(used / ex.limit * 100));
+            this.practiceFillEl.style.width = pct + '%';
+            this.practiceFillEl.classList.toggle('warn', used >= ex.limit - 2);
+        }
+    }
+
+    practiceFinish(success, detail) {
+        if (this.practiceDone) return;
+        this.practiceDone = true;
+        this.gameOver = true;
+        this.isThinking = false;
+        this.hintMove = null;
+        this.animationToken++;
+        this._aiGen++;
+        if (this.aiTimer) { clearTimeout(this.aiTimer); this.aiTimer = null; }
+        if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
+        this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
+        this.clearSavedGame();
+        this.updatePracticeUI();
+        this.updateControlsState();
+        this.render();
+        SoundManager.playGameEnd();
+
+        const ex = PRACTICE_POSITIONS[this.practiceIndex];
+        const used = this.practiceUsed();
+        this.showPracticeResult(success, ex, used, detail || '');
+    }
+
+    showPracticeResult(success, ex, used, detail) {
+        this.showModal(success ? '完成！' : '未完成', '', 'practice');
+        this.modalEl.classList.toggle('practice-ok', !!success);
+        this.modalEl.classList.toggle('practice-fail', !success);
+        const el = this.modalPracticeResultEl;
+        if (!el) return;
+        el.innerHTML =
+            '<div class="pr-name">「' + ex.name + '」</div>' +
+            '<div class="pr-steps"><span class="pr-num">' + used + '</span><span class="pr-unit">步</span>' +
+            '<span class="pr-limit">上限 ' + ex.limit + ' 步</span></div>' +
+            (detail ? '<div class="pr-note">' + detail + '</div>' : '');
+        el.classList.toggle('fail', !success);
+        el.classList.add('show');
+    }
+
+    openPracticePicker() {
+        this.buildPracticePicker();
+        if (this.practicePickerEl) this.practicePickerEl.classList.add('show');
+    }
+    closePracticePicker() {
+        if (this.practicePickerEl) this.practicePickerEl.classList.remove('show');
+    }
+    buildPracticePicker() {
+        if (!this.practicePickerListEl) return;
+        const tag = (ex) => {
+            if (ex.win === 'promote') return '升变 · ' + ex.limit + ' 步内';
+            if (ex.limit <= 3) return ex.limit + ' 步杀';
+            return '将杀 · ' + ex.limit + ' 步内';
+        };
+        let html = '', lastGroup = null;
+        PRACTICE_POSITIONS.forEach((ex, i) => {
+            if (ex.group !== lastGroup) {
+                lastGroup = ex.group;
+                html += '<div class="picker-group">' + ex.group + '</div>';
+            }
+            html += '<button class="picker-item' + (i === this.practiceIndex ? ' cur' : '') + '" data-idx="' + i + '">' +
+                '<span class="picker-no">' + (i + 1) + '</span>' +
+                '<span class="picker-name">' + ex.name + '</span>' +
+                '<span class="picker-tag">' + tag(ex) + '</span></button>';
+        });
+        this.practicePickerListEl.innerHTML = html;
+        if (this.practicePickerSubEl) this.practicePickerSubEl.textContent = '共 ' + PRACTICE_POSITIONS.length + ' 题';
+        const cur = this.practicePickerListEl.querySelector('.picker-item.cur');
+        if (cur) this.practicePickerListEl.scrollTop = Math.max(0, cur.offsetTop - 60);
+    }
+
+    /* ===================== 复盘 ===================== */
+    _stopAnalysis() {
+        this._analysisRunning = false;
+        if (this.modalAnalysisBtnEl) {
+            this.modalAnalysisBtnEl.textContent = '复盘';
+            this.modalAnalysisBtnEl.classList.remove('danger');
+        }
+        this.render();
+    }
+
+    _showAnalysisForPly(ply) {
+        if (!this._analysisResults) return;
+        const r = this._analysisResults.find(x => x.ply === ply);
+        if (!r) return;
+        const icon = r.grade === 'good' ? '✅' : (r.grade === 'q' ? '⚠️' : '❌');
+        const label = r.grade === 'good' ? '好棋' : (r.grade === 'q' ? '疑问手' : '失误');
+        const best = r.best ? (' · 建议：' + r.best) : '';
+        this.showToast(icon + ' ' + r.text + ' → ' + label + '\n偏差 ' + Math.round(r.dev) + best, false, 4000);
+    }
+}
+
+/* ===================== 复盘分析 ===================== */
+function analysisEval(board, color, depth) {
+    if (depth <= 0) return XQ.evaluate(board);
+    const moves = XQ.legalMoves(board, color);
+    if (moves.length === 0) return color === XQ.RED ? -XQ.MATE : XQ.MATE;
+    moves.sort((a, b) => {
+        const sa = a.captured ? (Math.abs(a.captured) * 10) : 0;
+        const sb = b.captured ? (Math.abs(b.captured) * 10) : 0;
+        return sb - sa;
+    });
+    let best = color === XQ.RED ? -Infinity : Infinity;
+    for (let i = 0; i < moves.length; i++) {
+        const m = moves[i];
+        const cap = XQ.makeMove(board, m);
+        const v = analysisEval(board, -color, depth - 1);
+        XQ.unmakeMove(board, m, cap);
+        if (color === XQ.RED) { if (v > best) best = v; }
+        else { if (v < best) best = v; }
+    }
+    return best;
+}
+
+function startAnalysis(g) {
+    if (!g.gameOver) { g.showToast('对局结束后才能复盘'); return; }
+    if (g.moveTexts.length < 2) { g.showToast('对局太短，无法分析'); return; }
+    if (g._analysisRunning) { g._stopAnalysis(); return; }
+
+    g._analysisRunning = true;
+    g._analysisResults = [];
+    g._analysisPly = 0;
+    g.selected = null;
+    g.validMoves = [];
+    g.showToast('正在复盘分析…');
+    if (g.modalAnalysisBtnEl) {
+        g.modalAnalysisBtnEl.textContent = '停止';
+        g.modalAnalysisBtnEl.classList.add('danger');
+    }
+
+    const snapshots = [{
+        board: XQ.createInitialBoard(),
+        currentPlayer: XQ.RED
+    }];
+    for (let i = 0; i < g.historyStack.length; i++) {
+        const h = g.historyStack[i];
+        snapshots.push({ board: XQ.cloneBoard(h.board), currentPlayer: h.currentPlayer });
+    }
+    snapshots.push({ board: XQ.cloneBoard(g.board), currentPlayer: g.currentPlayer });
+
+    const step = () => {
+        if (!g._analysisRunning) return;
+        if (g._analysisPly >= g.moveRecords.length) {
+            finishAnalysis(g);
+            return;
+        }
+        const i = g._analysisPly;
+        const rec = g.moveRecords[i];
+        const snap = snapshots[i];
+        if (snap && rec) {
+            const mover = snap.currentPlayer;
+            const work = XQ.cloneBoard(snap.board);
+            let bestScore = mover === XQ.RED ? -Infinity : Infinity;
+            let bestMove = null;
+            const legal = XQ.legalMoves(work, mover);
+            for (let k = 0; k < legal.length; k++) {
+                const m = legal[k];
+                const cap = XQ.makeMove(work, m);
+                const v = analysisEval(work, -mover, 2);
+                XQ.unmakeMove(work, m, cap);
+                if (mover === XQ.RED ? (v > bestScore) : (v < bestScore)) {
+                    bestScore = v; bestMove = m;
+                }
+            }
+            let actualScore;
+            const work2 = XQ.cloneBoard(snap.board);
+            const cap2 = XQ.makeMove(work2, rec);
+            actualScore = analysisEval(work2, -mover, 2);
+            XQ.unmakeMove(work2, rec, cap2);
+
+            const dev = Math.abs(actualScore - bestScore);
+            let grade = 'good';
+            if (dev > 400) grade = 'bad';
+            else if (dev > 120) grade = 'q';
+
+            let bestText = '';
+            if (bestMove && grade !== 'good') {
+                bestText = PIECE_CHARS[bestMove.piece] +
+                    ' ' + FILES[bestMove.from[1]] + (10 - bestMove.from[0]) +
+                    '→' + FILES[bestMove.to[1]] + (10 - bestMove.to[0]);
+            }
+            g._analysisResults.push({
+                ply: i, text: rec.text, dev: dev, grade: grade,
+                best: bestText, from: rec.from, to: rec.to
+            });
+        }
+        g._analysisPly++;
+        setTimeout(step, 0);
+    };
+    setTimeout(step, 60);
+}
+
+function finishAnalysis(g) {
+    g._analysisRunning = false;
+    if (g.modalAnalysisBtnEl) {
+        g.modalAnalysisBtnEl.textContent = '复盘';
+        g.modalAnalysisBtnEl.classList.remove('danger');
+    }
+    if (g.moveHistoryEl && g.moveHistoryEl.classList.contains('collapsed')) {
+        g.moveHistoryEl.classList.remove('collapsed');
+    }
+    const r = g._analysisResults || [];
+    const good = r.filter(x => x.grade === 'good').length;
+    const q = r.filter(x => x.grade === 'q').length;
+    const bad = r.filter(x => x.grade === 'bad').length;
+    g.showModal('复盘分析完成',
+        '共 ' + r.length + ' 步分析结果：\n✅ 好棋 ' + good + '\n⚠️ 疑问手 ' + q + '\n❌ 失误 ' + bad +
+        '\n\n点击走棋记录可查看每步详情', 'plain');
+    g.render();
+}
+
+/* ===================== 启动 ===================== */
+const game = new XiangqiGame();
+
+// 安卓返回键
+window.__androidBack = function () {
+    try {
+        if (game.practicePickerEl && game.practicePickerEl.classList.contains('show')) {
+            game.closePracticePicker();
+            return 'handled';
+        }
+        if (game.settingsOverlayEl && game.settingsOverlayEl.classList.contains('show')) {
+            game.closeSettings();
+            return 'handled';
+        }
+        if (game.modalEl && game.modalEl.classList.contains('show')) {
+            game.hideModal();
+            return 'handled';
+        }
+    } catch (e) { /* 忽略 */ }
+    return 'exit';
+};
+</script>
+</body>
+</html>
