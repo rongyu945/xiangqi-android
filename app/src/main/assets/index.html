@@ -988,7 +988,15 @@ const XQ = (() => {
         const moves = legalMoves(board, color);
         if (moves.length === 0) return -MATE + ctx.ply;
 
-        moves.sort((a, b) => captureScore(b) - captureScore(a));
+        // 着法排序：TT move > 杀手着法 > 吃子 > 静态
+        const killers = ctx.killers[ctx.ply] || [];
+        const moveScore = m => {
+            if (tt.move && SAME_MOVE(m, tt.move)) return 1000000000;
+            if (killers[0] && SAME_MOVE(m, killers[0])) return 5000000;
+            if (killers[1] && SAME_MOVE(m, killers[1])) return 4000000;
+            return captureScore(m);
+        };
+        moves.sort((a, b) => moveScore(b) - moveScore(a));
         if (tt.move) {
             const idx = moves.findIndex(m => SAME_MOVE(m, tt.move));
             if (idx > 0) { const t = moves[0]; moves[0] = moves[idx]; moves[idx] = t; }
@@ -996,17 +1004,34 @@ const XQ = (() => {
 
         let best = -Infinity;
         let bestMove = null;
+        // PVS：第一个着法全窗口，其余用零窗口搜索
         for (let i = 0; i < moves.length; i++) {
             const m = moves[i];
             const cap = makeMove(board, m);
             ctx.ply++;
-            const v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+            let v;
+            if (i === 0) {
+                v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+            } else {
+                v = -search(board, depth - 1, -alpha - 1, -alpha, -color, ctx);
+                if (v > alpha && v < beta) {
+                    v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+                }
+            }
             ctx.ply--;
             unmakeMove(board, m, cap);
             if (ctx.abort) return 0;
             if (v > best) { best = v; bestMove = m; }
             if (best > alpha) alpha = best;
-            if (alpha >= beta) break;
+            if (alpha >= beta) {
+                // 记录杀手着法（非吃子，用 makeMove 返回的被吃子判断）
+                if (cap === 0) {
+                    if (!ctx.killers[ctx.ply]) ctx.killers[ctx.ply] = [];
+                    const ks = ctx.killers[ctx.ply];
+                    if (!ks[0] || !SAME_MOVE(ks[0], m)) { ks[1] = ks[0]; ks[0] = m; }
+                }
+                break;
+            }
         }
         if (Math.abs(best) < MATE - depth * 2) {
             storeTT(key, depth, best, alpha, beta, bestMove);
@@ -1016,6 +1041,32 @@ const XQ = (() => {
 
     let lastNodes = 0;
     function getLastNodes() { return lastNodes; }
+
+    // 残局子力判和：双方都无进攻子(马/炮/车/过河兵)则绝对和棋  
+    // 返回 true 表示该局面任何一方都无法将杀（即便继续也无必胜手段）
+    function isDrawByMaterial(board) {
+        let hasOffRed = false, hasOffBlack = false;
+        for (let r = 0; r < board.length; r++) {
+            const row = board[r];
+            for (let c = 0; c < row.length; c++) {
+                const pc = row[c];
+                if (!pc) continue;
+                const type = getType(pc);
+                // 进攻子：马、炮、车，或已过河的兵（兵过河对红=进到r<=4，对黑=r>=5）
+                if (type === HORSE || type === CANNON || type === CHARIOT) {
+                    if (pc > 0) hasOffRed = true; else hasOffBlack = true;
+                    if (hasOffRed && hasOffBlack) return false;
+                } else if (type === PAWN) {
+                    if (pc > 0 && r <= 4) hasOffRed = true;      // 红兵过河(向上r减小)
+                    else if (pc < 0 && r >= 5) hasOffBlack = true; // 黑卒过河
+                    if (hasOffRed && hasOffBlack) return false;
+                }
+            }
+        }
+        // 若任一方还有进攻子而另一方完全没有，仍可能将杀(但复杂: 单车胜, 单马胜单士等)
+        // 保守：仅当双方都无进攻子才判和
+        return !hasOffRed && !hasOffBlack;
+    }
 
     function findBestMove(board, color, level) {
         const depthMap = { 1: 2, 2: 3, 3: 5 };
@@ -1030,7 +1081,7 @@ const XQ = (() => {
         const roots = legalMoves(work, color);
         if (roots.length === 0) return null;
 
-        const ctx = { start: Date.now(), limit: timeLimit, abort: false, nodes: 0, ply: 0, qdepth: 0 };
+        const ctx = { start: Date.now(), limit: timeLimit, abort: false, nodes: 0, ply: 0, qdepth: 0, killers: [] };
         roots.sort((a, b) => captureScore(b) - captureScore(a));
 
         let bestMove = roots[0];
@@ -1087,7 +1138,7 @@ const XQ = (() => {
         createInitialBoard, cloneBoard, getType, getColor, inBounds, inPalace,
         findKing, isSquareAttacked, isInCheck,
         generateMoves, legalMoves, makeMove, unmakeMove,
-        evaluate, findBestMove, getLastNodes
+        evaluate, findBestMove, getLastNodes, isDrawByMaterial
     };
 })();
 
@@ -2011,6 +2062,18 @@ class XiangqiGame {
     /* ===================== 胜负判定 ===================== */
     checkGameEnd() {
         if (this.gameOver) return true;
+        // 残局子力判和：双方都无进攻子(马/炮/车/过河兵)则和棋
+        if (XQ.isDrawByMaterial(this.board)) {
+            this.gameOver = true;
+            if (this.practiceMode) {
+                this.practiceFinish(false, '子力不足，判为和棋。');
+            } else {
+                this.showModal('和棋', '双方子力不足，无法分出胜负！', 'end');
+                SoundManager.playGameEnd();
+            }
+            this.clearSavedGame();
+            return true;
+        }
         const moves = XQ.legalMoves(this.board, this.currentPlayer);
         if (moves.length === 0) {
             this.gameOver = true;
@@ -2865,6 +2928,35 @@ const OPENINGS = [
         { from: [6,6], to: [5,6], piece: XQ.PAWN },     // 红 兵三进一
         { from: [3,6], to: [4,6], piece: -XQ.PAWN },    // 黑 卒7进1(对兵)
         { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+    ]},
+    { name: '五七炮对屏风马', moves: [
+        { from: [7,7], to: [7,4], piece: XQ.CANNON },   // 红 炮二平五
+        { from: [0,1], to: [2,2], piece: -XQ.HORSE },   // 黑 馬2進3
+        { from: [7,1], to: [7,6], piece: XQ.CANNON },   // 红 炮八平七(五七炮)
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,8], to: [0,7], piece: -XQ.CHARIOT }, // 黑 車9平8
+        { from: [9,8], to: [9,7], piece: XQ.CHARIOT },  // 红 俥一平二
+    ]},
+    { name: '仕角炮', moves: [
+        { from: [7,7], to: [7,5], piece: XQ.CANNON },   // 红 炮二平四(仕角炮)
+        { from: [3,7], to: [4,7], piece: -XQ.PAWN },    // 黑 卒3进1
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+    ]},
+    { name: '过宫炮', moves: [
+        { from: [7,7], to: [7,3], piece: XQ.CANNON },   // 红 炮二平六(过宫炮)
+        { from: [3,7], to: [4,7], piece: -XQ.PAWN },    // 黑 卒3进1
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+    ]},
+    { name: '列炮', moves: [
+        { from: [7,7], to: [7,4], piece: XQ.CANNON },   // 红 炮二平五
+        { from: [2,1], to: [2,4], piece: -XQ.CANNON },  // 黑 炮2平5(列炮)
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,1], to: [2,2], piece: -XQ.HORSE },   // 黑 馬2進3
+        { from: [9,8], to: [9,7], piece: XQ.CHARIOT },  // 红 俥一平二
         { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
     ]},
 ];
