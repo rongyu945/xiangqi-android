@@ -560,6 +560,63 @@ const XQ = (() => {
     const VALUES = { [KING]: 100000, [CHARIOT]: 900, [CANNON]: 450, [HORSE]: 400,
                      [ADVISOR]: 200, [ELEPHANT]: 200, [PAWN]: 100 };
 
+    /* ---- Piece-Square Tables (PST) ----
+       移植自 wukong-xiangqi (Code Monkey King), 来源: Li Cuanqi 2008,
+       "Using AdaBoost to Implement Chinese Chess Evaluation Functions", UCLA Thesis.
+       红方在上视角 (r=0 顶部为黑方, r=9 底部为红方底线)。黑方用镜像(反向行+色取反)。
+       每个值 = 位置相对价值(红视角)。缩放 PST_SCALE 控制占评估权重。 */
+    const PST_SCALE = 0.5;
+    const PST = {
+        [PAWN]: [ // 兵 (红在下, r=9红底线; 高值在顶部=过河进攻方向)
+            [0,3,6,9,12,9,6,3,0],
+            [18,36,56,80,120,80,56,36,18],
+            [14,26,42,60,80,60,42,26,14],
+            [10,20,30,34,40,34,30,20,10],
+            [6,12,18,18,20,18,18,12,6],
+            [2,0,8,0,8,0,8,0,2],
+            [0,0,-2,0,4,0,-2,0,0],
+            [0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0],
+        ],
+        [HORSE]: [ // 马
+            [4,8,16,12,4,12,16,8,4],
+            [4,10,28,16,8,16,28,10,4],
+            [12,14,16,20,18,20,16,14,12],
+            [8,24,18,24,20,24,18,24,8],
+            [6,16,14,18,16,18,14,16,6],
+            [4,12,16,14,12,14,16,12,4],
+            [2,6,8,6,10,6,8,6,2],
+            [4,2,8,8,4,8,8,2,4],
+            [0,2,4,4,-2,4,4,2,0],
+            [0,-4,0,0,0,0,0,-4,0],
+        ],
+        [CANNON]: [ // 炮
+            [6,4,0,-10,-12,-10,0,4,6],
+            [2,2,0,-4,-14,-4,0,2,2],
+            [2,2,0,-10,-8,-10,0,2,2],
+            [0,0,-2,4,10,4,-2,0,0],
+            [0,0,0,2,8,2,0,0,0],
+            [-2,0,4,2,6,2,4,0,-2],
+            [0,0,0,2,4,2,0,0,0],
+            [4,0,8,6,10,6,8,0,4],
+            [0,2,4,6,6,6,4,2,0],
+            [0,0,2,6,6,6,2,0,0],
+        ],
+        [CHARIOT]: [ // 车
+            [14,14,12,18,16,18,12,14,14],
+            [16,20,18,24,26,24,18,20,16],
+            [12,12,12,18,18,18,12,12,12],
+            [12,18,16,22,22,22,16,18,12],
+            [12,14,12,18,18,18,12,14,12],
+            [12,16,14,20,20,20,14,16,12],
+            [6,10,8,14,14,14,8,10,6],
+            [4,8,6,14,12,14,6,8,4],
+            [8,4,8,16,8,16,8,4,8],
+            [-2,10,6,14,12,14,6,10,-2],
+        ],
+    };
+
     /* ---- Zobrist 哈希 + 置换表（TT）---- */
     const ZOBRIST = (() => {
         let seed = 0x9e3779b9;
@@ -847,24 +904,12 @@ const XQ = (() => {
                 let v = VALUES[t] || 0;
                 const rr = color === RED ? r : 9 - r;
                 const cc = c;
+                // 位置表 PST：兵/马/炮/车用精细位置值（红在上视角，黑取镜像反向）
+                const pst = PST[t];
+                if (pst) {
+                    v += color * PST_SCALE * pst[color === RED ? r : rr][cc];
+                }
                 switch (t) {
-                    case PAWN: {
-                        const adv = 6 - rr;
-                        if (adv > 0) v += adv * 14;
-                        if (rr <= 4) v += 40;
-                        if (cc >= 3 && cc <= 5) v += 12;
-                        break;
-                    }
-                    case HORSE:
-                        v += (4 - Math.abs(cc - 4)) * 6;
-                        v += Math.max(0, rr - 3) * 4;
-                        break;
-                    case CANNON:
-                        v += (4 - Math.abs(cc - 4)) * 4;
-                        break;
-                    case CHARIOT:
-                        v += (4 - Math.abs(cc - 4)) * 3;
-                        break;
                     case KING:
                         if (!inPalace(r, c, color)) v -= 50;
                         break;
@@ -1992,6 +2037,28 @@ class XiangqiGame {
     }
 
     /* ===================== AI ===================== */
+    /* ---- 开局库：AI 开局阶段按定式走棋，避免评估函数在平淡开局的钝化 ----
+       moves 为交替着法（红先），每步 { from, to, piece }；text 由 moveToChinese 实时生成，
+       与已走 moveTexts 前缀匹配，命中则返回谱中该轮到的一步坐标。 */
+    openingBookMove() {
+        const t = this.moveTexts;
+        if (t.length < 1 || t.length > OPENING_DEPTH) return null;
+        for (let i = 0; i < OPENINGS.length; i++) {
+            const line = OPENINGS[i].moves;
+            if (line.length <= t.length) continue;
+            let ok = true;
+            for (let k = 0; k < t.length; k++) {
+                const text = this.moveToChinese({ from: line[k].from, to: line[k].to }, line[k].piece);
+                if (text !== t[k]) { ok = false; break; }
+            }
+            if (ok) {
+                const nxt = line[t.length];
+                return { from: nxt.from.slice(), to: nxt.to.slice() };
+            }
+        }
+        return null;
+    }
+
     scheduleAI() {
         if (this.gameMode !== 'pvc') return;
         this.isThinking = true;
@@ -2010,7 +2077,7 @@ class XiangqiGame {
 
             let move = null;
             try {
-                move = XQ.findBestMove(this.board, color, level);
+                move = this.openingBookMove() || XQ.findBestMove(this.board, color, level);
             } catch (e) { move = null; }
 
             if (gen !== this._aiGen) { this.isThinking = false; this.render(); return; }
@@ -2770,6 +2837,38 @@ function finishAnalysis(g) {
 }
 
 /* ===================== 启动 ===================== */
+/* ---- 开局库数据（OPENINGS）----
+   交替着法（红先），每步 { from, to, piece }。piece 用 XQ 常量（红正黑负）。
+   坐标基于红在下棋盘（r=0 顶黑方，r=9 底红方，c=0..8 左到右）。
+   覆盖常用开局：中炮对屏风马、顺炮、列炮。AI 走棋时按 moveTexts 匹配取下一步。 */
+const OPENING_DEPTH = 12;
+const OPENINGS = [
+    { name: '中炮对屏风马', moves: [
+        { from: [7,7], to: [7,4], piece: XQ.CANNON },   // 红 炮二平五
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,8], to: [0,7], piece: -XQ.CHARIOT }, // 黑 車9平8
+        { from: [9,8], to: [9,7], piece: XQ.CHARIOT },  // 红 俥一平二
+        { from: [3,6], to: [4,6], piece: -XQ.PAWN },    // 黑 卒7进1
+        { from: [6,6], to: [5,6], piece: XQ.PAWN },     // 红 兵三进一
+        { from: [0,1], to: [2,2], piece: -XQ.HORSE },   // 黑 馬2進3
+    ]},
+    { name: '顺炮', moves: [
+        { from: [7,7], to: [7,4], piece: XQ.CANNON },   // 红 炮二平五
+        { from: [2,7], to: [2,4], piece: -XQ.CANNON },  // 黑 炮8平5
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+        { from: [9,8], to: [9,7], piece: XQ.CHARIOT },  // 红 俥一平二
+        { from: [0,8], to: [0,7], piece: -XQ.CHARIOT }, // 黑 車9平8
+    ]},
+    { name: '仙人指路', moves: [
+        { from: [6,6], to: [5,6], piece: XQ.PAWN },     // 红 兵三进一
+        { from: [3,6], to: [4,6], piece: -XQ.PAWN },    // 黑 卒7进1(对兵)
+        { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
+        { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
+    ]},
+];
+
 const game = new XiangqiGame();
 
 // 安卓返回键
