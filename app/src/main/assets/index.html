@@ -1069,7 +1069,7 @@ const XQ = (() => {
     }
 
     function findBestMove(board, color, level) {
-        const depthMap = { 1: 2, 2: 3, 3: 5 };
+        const depthMap = { 1: 2, 2: 3, 3: 6 };
         const limitMap = { 1: 400, 2: 900, 3: 3000 };
         const marginMap = { 1: 90, 2: 35, 3: 0 };
 
@@ -1106,7 +1106,9 @@ const XQ = (() => {
             bestMove = localBest;
             bestScores = iter.map(m => ({ m: m, score: m.score }));
             roots.sort((a, b) => (b.score || 0) - (a.score || 0));
-            if (Date.now() - ctx.start > timeLimit * 0.55) break;
+            // 大师档用更充分的时间预算(0.75), 低档保持紧凑(0.55)
+            const budgetRatio = level === 3 ? 0.75 : 0.55;
+            if (Date.now() - ctx.start > timeLimit * budgetRatio) break;
         }
         lastNodes = ctx.nodes;
 
