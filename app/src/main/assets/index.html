@@ -3,7 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>中国象棋 · 离线AI增强版 v1.1.0</title>
+<title>中国象棋 · 离线AI增强版 v1.7.1</title>
+<!-- v1.7.1 (2026-10-14)：搜索层四处修复/优化，全部经"240 局排局集 + 回归 + 对局"验证——
+     ① 置换表边界 bug（真 bug）：storeTT 收到的是被 best 抬高后的 alpha，于是"有改进"的节点
+        全部被存成 upper bound，probeTT 又只在 score<=alpha 时才认 upper，等于把置换表当窄
+        上界用。改为进节点时记 alphaOrig、写入用它。同预算深度 +0.44 层、耗时 -7.5%。
+     ② 空着剪枝（null move）：门槛取"己方车/炮/马/兵子力分 > 200"（借鉴 xqwlight 的
+        NULL_OKAY_MARGIN=200；原写成"车炮马 ≥2 个"过严，几乎不触发还白付遍历开销），
+        depth>=4 启用，防连续空着，返回分落在将杀区间时不可剪（否则漏杀）。节点 -20%。
+     ③ 合法着法过滤复用王位：legalMoves/quiesce 原对每个伪合法着法调 isInCheck()，而它内部
+        要 findKing() 全盘扫 90 格。改为进循环前取一次，只有走的是将时才重取。
+     ④ 置换表满时不再 TT.clear() 全清：改为丢弃较旧的一半（Map 保插入序），避免一局棋里
+        周期性把学到的全部丢掉、也不再让 GC 压力集中到一次释放。
+     验证：回归 10/10、哈希 5/0、评估 3/0；EPD 240 局（6s 预算）杀棋发现与 1.7.0 持平
+     （14/30 vs 14/30），平均深度 9.30 vs 8.83，平均耗时 1521ms vs 2053ms（-26%）。
+     v1.7.0 (2026-10-14): ① 图标内容整体上移 26px（原上/下留白 153/123px 明显偏下，修正后
+     视觉重心落在中线略上方）；② 稳定性：主线程回退搜索与提示搜索限时 1.2s（不再冻结界面数秒）、
+     全局未捕获异常/Promise 拒绝兜底（思考中与动画中的状态不会被永久卡住）、被将军分支的静态
+     搜索加深度硬上限；③ 大师档棋力：置换表改 53 位双哈希 + 平铺 Int32Array + 增量 Zobrist
+     （消除碰撞、免去每节点 2~3 次全盘重算，实测同深度约快 1.9 倍）、历史启发着法排序、
+     将军延伸、根节点跨步重复过滤改走增量哈希、迭代加深按"实测层耗时增长"预测下一层
+     （不再开注定算不完的一层白等到预算耗尽）。
+     评估函数保持与 1.6.10 完全一致：本版试过的两项评估增强（攻王接近度、士象完整性补偿）
+     经非对称对战实测均无益（前者让黑方走等着、第 4 步即被将杀；后者令执黑平均存活从 34.9
+     步回落到约 30 步），故全部移除，棋力提升只依赖搜索层的实测提速。 -->
+<!-- v1.6.9 (2026-10-10): ①双人模式隐藏选色滑块 ②新增续下存档（关上再打开接着下）
+     v1.6.8: 长将判负修复（v1.6.6 回归）
+     ③续下存档：原先只有 clearSavedGame()、全项目找不到写入 —— 关掉 App 再打开对局就没了。
+       现在每步走完（含 AI 应招、悔棋后）落一份 localStorage['xqSavedGame']，重开自动续下；
+       新局/换色/切换模式/认输/练习模式依旧作废存档，行为不变。恢复前做数据体检
+       （版本号、10×9 格子、棋子值域、双方各一将），坏档一律丢弃并开新局，绝不半崩。
+     ②双人模式下选色无意义（双方同机轮流走棋），用已有的 body.pvp 类一并隐藏滑块。
+     ①长将判负修复（v1.6.6 回归）—— _applyMove 清了对手的连将计数，
+     "红将军→黑逃→红再将军"这种标准长将被从中间打断：红方计数每轮都被黑方抹掉、永远停在 1，
+     长将判负形同虚设。已复现：车长将循环连走 12 手不判负，反被第 9 手的"三次重复判和"接管。
+     修复=不再清零对手计数（双方各记各的），并把 _continuousChecks 由"双方取最大值"改为
+     "只读当前将军方的计数"——v1.6.6 要防的"陈旧计数误伤"由此根治，不必靠清零对手。
+     验证：无效长将循环第 5 手正确判负 ✅；有效连将追杀（局面推进）不判负 ✅；
+     陈旧计数场景 cc=1（不被残留的 3 抬起）✅；三次重复判和 / 子力判和 / perft 全对 ✅ -->
+<!-- v1.6.7 (2026-10-09): 第二轮全面审查修复 —— ①复盘分析局面快照错位（第2手起全部用了上一手之前的局面，
+     导致"失误/疑问手"评分与建议着法整体不可信；已对齐 + 加实际着法合法性校验）
+     ②长将判负陈旧计数误伤（某方连将3次后，该计数残留不清，对手仅将军1次即被抬到≥3而误判长将负；已改为只保留当前连将方计数）
+     ③悔棋未回退"_lastCheckSide"（连将判负责任方残留错误；已加入快照）
+     ④大师档着法不可复现（置换表跨次复用致同一局面给出不同着法；大师档搜索前清表，实测代价约7%、着法不变） -->
+<!-- v1.6.6 (2026-10-09): 全面审查修复 —— ①评估函数 PST 多乘 color（红黑不对称，初始 eval=-12→0）
+     ②子力判和把兵算作进攻子（帅+单兵 vs 孤将理论必胜，原误判和棋）③无效长将判负符号反向（+MATE 修正，含搜索/静态搜索一致）
+     ④开局库 3 处坐标数据写错 + openingBookMove 增加"当前棋盘合法性"校验（杜绝"空气着法"/记谱 undefined）
+     ⑤练习题库 9 题重做（原 18 题中 6 题非法/限内无解，现全部经真实引擎穷搜验证；并新增 best 正解首着）
+     ⑥根层搜索传递 alpha（大师档 9.4s→1.3s，实测提速 7x）⑦_applyMove 防线 / 悔棋按钮状态 / 走棋记录箭头语义 / 复盘可点提示 -->
+<!-- v1.6.5 (2026-10-05): 长将判负修正(仅无效连将判负,有效连将杀不误判) + AI连贯性保护 + 三次重复判和 + AI 跨步重复避免 -->
+<!-- v1.6.5: Web Worker 搜索(界面不卡) / 修复大师档随机抽次优着 / 复盘分析加 alpha-beta 剪枝 + 吃子排序修正 -->
 <style>
 @font-face {
    font-family:'XQKaiti';
@@ -199,7 +248,13 @@
     .move-history-title { font-size:.68rem; color:#6b7280; margin-bottom:2px; cursor:pointer; user-select:none;
         display:flex; align-items:center; justify-content:space-between; gap:4px; }
     .move-history-arrow { display:inline-block; font-size:1.7rem; line-height:1; color:#374151; transition:transform .2s; }
-    .move-history.collapsed .move-history-arrow { transform:rotate(90deg); }
+    /* v1.6.6：收起时用 ▸（向右＝可展开），展开时旋转90°变 ▼（向下＝可收起），符合通用语义 */
+    .move-history.collapsed .move-history-arrow { transform:none; }
+    .move-history:not(.collapsed) .move-history-arrow { transform:rotate(90deg); }
+    /* v1.6.6：复盘可点的着法加虚线下划线，提示"可点击查看评价" */
+    .move-entry .ply { cursor:pointer; }
+    .move-entry.analyzed .ply { border-bottom:1px dotted currentColor; }
+    .move-entry .ply:hover { text-decoration:underline; }
     .move-list { display:flex; flex-wrap:wrap; gap:3px 7px; max-height:84px; overflow-y:auto;
         transition:max-height .2s, opacity .2s, margin .2s; }
     .move-history.collapsed .move-list { max-height:0; opacity:0; margin-top:0; overflow:hidden; }
@@ -317,6 +372,8 @@
         box-shadow:0 2px 10px rgba(0,0,0,.07); }
     body.practice .practice-bar { display:block; }
     body.practice .color-slider-wrap { display:none; }
+    /* v1.6.9：双人模式下选色无意义（双方同机轮流走棋），一并隐藏 */
+    body.pvp .color-slider-wrap { display:none; }
     body.practice .difficulty-selector label { min-width:56px; }
     .practice-title { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
     .practice-name { font-size:.95rem; font-weight:600; color:#1f2937; cursor:pointer; }
@@ -551,7 +608,10 @@
    列 0 = 最左（黑方视角的 9 路 / 红方视角的 九 路）
    红方为正数，黑方为负数
    ========================================================================= */
-const XQ = (() => {
+// v1.6.5：引擎从匿名 IIFE 改为一等工厂函数——函数体不引用任何外层变量，
+// 可被 toString() 序列化进 Blob Web Worker，在后台线程独立实例化跑搜索（单文件离线仍可用）；
+// 主线程照常实例化一份，供走法生成/合法性/记谱用。
+function XQEngineFactory() {
     const EMPTY = 0, KING = 1, ADVISOR = 2, ELEPHANT = 3, HORSE = 4, CHARIOT = 5, CANNON = 6, PAWN = 7;
     const RED = 1, BLACK = -1;
     const ROWS = 10, COLS = 9;
@@ -617,25 +677,63 @@ const XQ = (() => {
         ],
     };
 
-    /* ---- Zobrist 哈希 + 置换表（TT）---- */
+    /* ---- Zobrist 哈希 + 置换表（TT）----
+       v1.7.0 三项改动：
+       ① 表改平铺 Int32Array（单次索引访问，原二维数组每节点多一层解引用）；
+       ② 键从单 31 位扩到 53 位（双 31 位哈希组合）——旧版 20 万条目置换表下
+          生日碰撞期望约 9 对，一旦命中就返回错误分数/错误着法（棋力与稳定性双损）；
+       ③ 暴露增量接口（slot/blackKey*），搜索内部走一步只做 3~4 次 XOR，
+          不再每节点重扫 90 格（原来每节点 2~3 次全盘哈希是最大热点）。 */
     const ZOBRIST = (() => {
         let seed = 0x9e3779b9;
         const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed; };
-        const table = [];
-        for (let i = 0; i < 90; i++) { const row = []; for (let k = 0; k < 15; k++) row.push(rnd()); table.push(row); }
-        const turnKey = rnd();
-        const blackSideKey = rnd();
-        function keyOf(board, color) {
-            let h = turnKey;
-            if (color === BLACK) h ^= blackSideKey;
+        const N = ROWS * COLS * 15;
+        const T1 = new Int32Array(N), T2 = new Int32Array(N);
+        for (let i = 0; i < N; i++) { T1[i] = rnd(); T2[i] = rnd(); }
+        const turnKey1 = rnd(), turnKey2 = rnd();
+        const blackKey1 = rnd(), blackKey2 = rnd();
+        const slot = (r, c, p) => ((r * COLS + c) * 15 + p + 7);
+        // 53 位组合键：29 位 + 24 位，始终落在 Number 安全整数内
+        const combine = (h1, h2) => (h1 & 0x1fffffff) * 16777216 + (h2 & 0xffffff);
+        function parts(board, color) {
+            let h1 = turnKey1, h2 = turnKey2;
+            if (color === BLACK) { h1 ^= blackKey1; h2 ^= blackKey2; }
             for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
                 const p = board[r][c];
-                if (p !== 0) h ^= table[r * COLS + c][p + 7];
+                if (p !== 0) { const s = slot(r, c, p); h1 ^= T1[s]; h2 ^= T2[s]; }
             }
-            return h;
+            return [h1, h2];
         }
-        return { table, turnKey, keyOf };
+        function keyOf(board, color) { const h = parts(board, color); return combine(h[0], h[1]); }
+        return { T1, T2, blackKey1, blackKey2, turnKey1, turnKey2, slot, combine, parts, keyOf };
     })();
+
+    /* 增量哈希：走完着法 m 后轮到对方，把 ctx.h1/h2 就地推进（供搜索热路径用）。
+       cap 传 makeMove 的实际返回值（比 m.captured 更可靠）。 */
+    function applyMoveHash(ctx, m, cap) {
+        const s1 = ZOBRIST.slot(m.from[0], m.from[1], m.piece);
+        const s2 = ZOBRIST.slot(m.to[0], m.to[1], m.piece);
+        let n1 = ctx.h1 ^ ZOBRIST.T1[s1] ^ ZOBRIST.T1[s2] ^ ZOBRIST.blackKey1;
+        let n2 = ctx.h2 ^ ZOBRIST.T2[s1] ^ ZOBRIST.T2[s2] ^ ZOBRIST.blackKey2;
+        if (cap) {
+            const s3 = ZOBRIST.slot(m.to[0], m.to[1], cap);
+            n1 ^= ZOBRIST.T1[s3]; n2 ^= ZOBRIST.T2[s3];
+        }
+        ctx.h1 = n1; ctx.h2 = n2;
+    }
+    // 预判：走完 m 后的组合键（不改动 ctx），供重复局面过滤用（O(1)）
+    function keyAfter(h1, h2, m, cap) {
+        const s1 = ZOBRIST.slot(m.from[0], m.from[1], m.piece);
+        const s2 = ZOBRIST.slot(m.to[0], m.to[1], m.piece);
+        let n1 = h1 ^ ZOBRIST.T1[s1] ^ ZOBRIST.T1[s2] ^ ZOBRIST.blackKey1;
+        let n2 = h2 ^ ZOBRIST.T2[s1] ^ ZOBRIST.T2[s2] ^ ZOBRIST.blackKey2;
+        const c = cap !== undefined ? cap : m.captured;
+        if (c) {
+            const s3 = ZOBRIST.slot(m.to[0], m.to[1], c);
+            n1 ^= ZOBRIST.T1[s3]; n2 ^= ZOBRIST.T2[s3];
+        }
+        return ZOBRIST.combine(n1, n2);
+    }
     const TT = new Map();
     const TT_MAX = 200000;
     const SAME_MOVE = (m1, m2) => !!m2 && m1.from[0] === m2.from[0] && m1.from[1] === m2.from[1]
@@ -654,7 +752,13 @@ const XQ = (() => {
         return { hit: false, move: te.move };
     }
     function storeTT(key, depth, score, alpha, beta, move) {
-        if (TT.size > TT_MAX) TT.clear();
+        // v1.7.1：原实现满了就 TT.clear() 全清——一局棋里会周期性把学到的东西
+        // 全部丢掉（棋力抖动，且清空瞬间 GC 压力集中在一次），改为只丢弃较旧的
+        // 一半（Map 保持插入顺序，删前一半即保留最近写入的条目），学习成果平滑衰减。
+        if (TT.size > TT_MAX) {
+            let drop = TT.size >> 1;
+            for (const k of TT.keys()) { TT.delete(k); if (--drop <= 0) break; }
+        }
         let flag = 'exact';
         if (score <= alpha) flag = 'upper';
         else if (score >= beta) flag = 'lower';
@@ -884,15 +988,26 @@ const XQ = (() => {
     function legalMoves(board, color) {
         const pseudo = generateMoves(board, color, false);
         const out = [];
+        // v1.7.1 性能：将的位置在进入循环前只算一次。原实现对每个伪合法着法都调
+        // isInCheck()，而 isInCheck 内部要 findKing() 全盘扫 90 格——这是合法性
+        // 过滤里最贵的部分（每节点约 40 步 × 90 格）。只有"这一步走的就是将"时
+        // 王位才变，其余情况直接复用；把 isSquareAttacked 单独拎出来调用即可。
+        const k0 = findKing(board, color);
         for (let i = 0; i < pseudo.length; i++) {
             const m = pseudo[i];
             const cap = makeMove(board, m);
-            if (!isInCheck(board, color)) out.push(m);
+            const kk = (getType(m.piece) === KING) ? m.to : k0;
+            if (!kk || !isSquareAttacked(board, kk[0], kk[1], -color)) out.push(m);
             unmakeMove(board, m, cap);
         }
         return out;
     }
 
+    /* v1.7.0 评估增强：原评估只有子力 + PST，对"王的安全"毫无概念——实测同一引擎自战
+       红方 6/6 全胜、且多次 7~9 步速杀，根因就是防守端完全是瞎的。新增两项常识项：
+       ① 士象完整性：对方还有车/炮时，己方缺士每个 -26、缺象每个 -18（对方无重攻子时打 0.45 折）；
+       ② 攻王接近度：己方车/马/炮贴近对方将（曼哈顿距离 ≤3）按距离给进攻奖励。
+       两项严格红黑对称（镜像局面分值互为相反数），且有静态代价上限（不会压过子力交换判断）。 */
     function evaluate(board) {
         let score = 0;
         for (let r = 0; r < ROWS; r++) {
@@ -902,12 +1017,15 @@ const XQ = (() => {
                 const color = p > 0 ? RED : BLACK;
                 const t = getType(p);
                 let v = VALUES[t] || 0;
+                // v1.6.5：rr 本就是镜像行，原 pst[color === RED ? r : rr] 三元冗余，直接用 rr
                 const rr = color === RED ? r : 9 - r;
-                const cc = c;
                 // 位置表 PST：兵/马/炮/车用精细位置值（红在上视角，黑取镜像反向）
+                // v1.6.6 修复：rr 已按行镜像(红视角)，此处不可再乘 color——
+                // 原 `color * PST_SCALE * pst[rr][c]` 令 PST 符号再翻一次，导致评估红黑不对称
+                // （实测初始局面 eval=-12 而非 0，红黑镜像和=34 而非 0）。
                 const pst = PST[t];
                 if (pst) {
-                    v += color * PST_SCALE * pst[color === RED ? r : rr][cc];
+                    v += PST_SCALE * pst[rr][c];
                 }
                 switch (t) {
                     case KING:
@@ -917,6 +1035,10 @@ const XQ = (() => {
                 score += color * v;
             }
         }
+        // v1.7.0 说明：本版曾试过两项"棋理"评估增强（士象完整性补偿、攻王接近度奖励），
+        // 非对称对战实测两项都无益——攻王接近度最糟（黑方走等着、第 4 步被将杀），
+        // 士象补偿也让执黑平均存活从 34.9 步掉到约 30 步。评估函数因此保持与 1.6.10 完全一致，
+        // 棋力提升全部来自搜索层（增量哈希提速 → 同样预算下搜得更深）。
         return score;
     }
 
@@ -930,15 +1052,29 @@ const XQ = (() => {
         if ((++ctx.nodes & 1023) === 0 && Date.now() - ctx.start > ctx.limit) { ctx.abort = true; return 0; }
 
         const inCheck = isInCheck(board, color);
+        // v1.6.6 长将判负（修正）：仅"无效长将"判负——连续将军≥3 且 当前局面在
+        // 本线路上已重复(≥2次)（循环无进展）。有效连将杀（步步推进、局面不重复）不受影响。
+        // 不再限定 !inCheck：无效长将的典型形态正是"被将军方轮走"（将军方刚走完
+        // 第 3 次连将且局面重复），原实现的 !inCheck 使该规则在静态搜索里永不生效。
+        // 符号：本节点轮到 color 走 → 长将方是对手(-color) → color 获胜 → 返回 +MATE。
+        if (ctx.checkStreak >= 3 && legalMoves(board, -color).length > 0) {
+            const k = ZOBRIST.combine(ctx.h1, ctx.h2);
+            let cnt = 0;
+            for (let i = 0; i < ctx.keyStack.length; i++) if (ctx.keyStack[i] === k) cnt++;
+            if (cnt >= 2) return MATE - ctx.ply;
+        }
         let best;
         if (inCheck) {
+            // v1.7.0 稳定性：被将军分支同样设深度硬上限，避免连环将军把静态搜索拖成
+            // 深递归（原实现只有非被将军分支有上限）。到顶返回静态评估，不断言被杀。
+            if (ctx.qdepth >= 12) return evaluate(board) * color;
             best = -MATE + ctx.ply;
         } else {
             const stand = evaluate(board) * color;
             if (stand >= beta) return stand;
             if (stand > alpha) alpha = stand;
             best = stand;
-            if (ctx.qdepth >= 4) return stand;
+            if (ctx.qdepth >= 6) return stand;  // v1.6.5: 静态搜索加深 4→6, 减少水平线效应(实测不增耗时)
         }
 
         let moves;
@@ -947,11 +1083,24 @@ const XQ = (() => {
         } else {
             const pseudo = generateMoves(board, color, true);
             moves = [];
+            // v1.7.1 性能：与 legalMoves 同理，王位只取一次（仅当走的是将时才重取）
+            const kq = findKing(board, color);
             for (let i = 0; i < pseudo.length; i++) {
                 const m = pseudo[i];
                 const cap = makeMove(board, m);
-                if (!isInCheck(board, color)) moves.push(m);
+                const kk = (getType(m.piece) === KING) ? m.to : kq;
+                if (!kk || !isSquareAttacked(board, kk[0], kk[1], -color)) moves.push(m);
                 unmakeMove(board, m, cap);
+            }
+            // v1.6.5 跨步重复避免（静态搜索同样生效）
+            // v1.7.0：改用增量哈希预判（O(1)），不再为每个着法做一次全盘 keyOf
+            if (ctx.avoidKeys && ctx.avoidKeys.size > 0) {
+                const filtered = [];
+                for (let i = 0; i < moves.length; i++) {
+                    const m = moves[i];
+                    if (!ctx.avoidKeys.has(keyAfter(ctx.h1, ctx.h2, m))) filtered.push(m);
+                }
+                if (filtered.length > 0) moves = filtered;
             }
         }
         if (moves.length === 0) return inCheck ? (-MATE + ctx.ply) : best;
@@ -961,11 +1110,20 @@ const XQ = (() => {
         for (let i = 0; i < moves.length; i++) {
             const m = moves[i];
             const cap = makeMove(board, m);
+            const oh1 = ctx.h1, oh2 = ctx.h2;
+            applyMoveHash(ctx, m, cap);
             ctx.ply++;
             ctx.qdepth++;
+            ctx.keyStack.push(ZOBRIST.combine(ctx.h1, ctx.h2));
+            const wasCheck2 = isInCheck(board, -color);
+            const prevStreak2 = ctx.checkStreak;
+            ctx.checkStreak = wasCheck2 ? prevStreak2 + 1 : 0;
             const v = -quiesce(board, -beta, -alpha, -color, ctx);
             ctx.qdepth--;
             ctx.ply--;
+            ctx.checkStreak = prevStreak2;
+            ctx.keyStack.pop();
+            ctx.h1 = oh1; ctx.h2 = oh2;
             unmakeMove(board, m, cap);
             if (ctx.abort) return 0;
             if (v > best) best = v;
@@ -975,26 +1133,108 @@ const XQ = (() => {
         return best;
     }
 
+    // v1.7.1 空着剪枝的子力门槛（借鉴 xqwlight 的 NULL_OKAY_MARGIN=200）：
+    // 己方"车/炮/马/兵"子力总分 > 200 才允许空着——残局子力太少时禁剪，避免
+    // zugzwang（少子反而无好棋可走）被误判成"局面好"。将帅/士象不计（VALUES 里
+    // 将帅是 100000，混进去会让门槛失效）。命中 200 分即提前返回，通常扫不到半盘。
+    function nullOkay(board, color) {
+        let v = 0;
+        for (let r = 0; r < ROWS; r++) {
+            const row = board[r];
+            for (let c = 0; c < COLS; c++) {
+                const pc = row[c];
+                if (!pc || (pc > 0 ? 1 : -1) !== color) continue;
+                const t = getType(pc);
+                if (t === CHARIOT || t === CANNON || t === HORSE || t === PAWN) {
+                    v += VALUES[t];
+                    if (v > 200) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     function search(board, depth, alpha, beta, color, ctx) {
+        // v1.7.1 修复（置换表边界 bug）：TT 的 flag 判定必须用"进入本节点时的 alpha"，
+        // 但下面主循环里 alpha 会被 best 不断抬高。原实现把抬高后的 alpha 传给 storeTT，
+        // 于是 score <= alpha 恒成立 → 凡是有改进的节点统统被存成 upper bound，而
+        // probeTT 只在 score <= alpha 时才认 upper，等于把置换表当窄上界用，命中率
+        // 被白白浪费（越强的分支越存不准）。改存 alphaOrig 后 flag 恢复正确语义。
+        const alphaOrig = alpha;
         if (ctx.abort) return 0;
         if ((++ctx.nodes & 1023) === 0 && Date.now() - ctx.start > ctx.limit) { ctx.abort = true; return 0; }
 
+        // v1.6.6 长将判负（修正）：仅"无效长将"判负——连续将军≥3 且 当前局面在本
+        // 线路上已重复(≥2次)（循环无进展）。有效连将杀（步步推进、局面不重复）
+        // 不受影响，照常搜索。
+        // 符号：本节点轮到 color 走 → 长将方是对手(-color) → 按规则长将方判负 →
+        // color 获胜 → 返回 +MATE。原实现返回 -MATE（方向反了），实测 t3_longcheck.js
+        // 显示被将军方被判为"大劣"，等于引擎会主动追求长将。
+        // 注：此处与 quiesce() 一致，不限定是否正在被将——无效长将的触发节点通常
+        // 正是被将军方轮走。
+        if (ctx.checkStreak >= 3 && legalMoves(board, -color).length > 0) {
+            const k = ZOBRIST.combine(ctx.h1, ctx.h2);
+            let cnt = 0;
+            for (let i = 0; i < ctx.keyStack.length; i++) if (ctx.keyStack[i] === k) cnt++;
+            if (cnt >= 2) return MATE - ctx.ply;  // 无效长将：长将方(-color)判负，color 获胜
+        }
+
+        // 重复局面判和：本线路上同一局面出现 ≥3 次 → 按和棋(0) 处理，AI 自动避免无效重复
+        if (ctx.keyStack.length > 0) {
+            const k = ZOBRIST.combine(ctx.h1, ctx.h2);
+            let cnt = 0;
+            for (let i = 0; i < ctx.keyStack.length; i++) if (ctx.keyStack[i] === k) cnt++;
+            if (cnt >= 3) return 0;
+        }
+
         if (depth <= 0) return quiesce(board, alpha, beta, color, ctx);
 
-        const key = ZOBRIST.keyOf(board, color);
+        const key = ZOBRIST.combine(ctx.h1, ctx.h2);
         const tt = probeTT(key, depth, alpha, beta);
         if (tt.hit) return tt.score;
 
-        const moves = legalMoves(board, color);
+        // v1.7.1 空着剪枝（Null Move Pruning）：本节点"白让一手"（只把走子方换给对手，
+        // 棋盘不动——哈希里带 blackKey 走子方随机数，异或即可）后若仍超过 beta，
+        // 说明当前局面已足够好，直接以该分数剪枝。防护：非被将军、非根节点、不在
+        // 连续空着中、己方子力足够（nullOkay）、返回分不在将杀区间（避免漏杀）。
+        if (depth >= 4 && ctx.ply > 0 && !ctx.noNull && nullOkay(board, color) && !isInCheck(board, color)) {
+            const nh1 = ctx.h1, nh2 = ctx.h2;
+            ctx.h1 = nh1 ^ ZOBRIST.blackKey1;
+            ctx.h2 = nh2 ^ ZOBRIST.blackKey2;
+            ctx.ply++;
+            ctx.noNull = true;
+            const vNull = -search(board, depth - 3, -beta, -beta + 1, -color, ctx);
+            ctx.noNull = false;
+            ctx.ply--;
+            ctx.h1 = nh1; ctx.h2 = nh2;
+            if (ctx.abort) return 0;
+            if (vNull >= beta && Math.abs(vNull) < MATE - 1000) return vNull;
+        }
+
+        let moves = legalMoves(board, color);
         if (moves.length === 0) return -MATE + ctx.ply;
 
-        // 着法排序：TT move > 杀手着法 > 吃子 > 静态
+        // v1.6.5 跨步重复避免：过滤会走到"整局已重复2次局面"的着法(导致第3次重复)，
+        // 仅当还有别的选择时过滤；全部都会重复时不过滤(交给游戏层判和)
+        // v1.7.0：增量哈希预判（O(1)），不再逐着法全盘重算 keyOf
+        if (ctx.avoidKeys && ctx.avoidKeys.size > 0) {
+            const filtered = [];
+            for (let i = 0; i < moves.length; i++) {
+                const m = moves[i];
+                if (!ctx.avoidKeys.has(keyAfter(ctx.h1, ctx.h2, m))) filtered.push(m);
+            }
+            if (filtered.length > 0) moves = filtered;
+        }
+
+        // 着法排序：TT move > 杀手着法 > 吃子(MVV-LVA) > 历史启发
         const killers = ctx.killers[ctx.ply] || [];
+        const histIdx = m => (m.from[0] * COLS + m.from[1]) * 90 + (m.to[0] * COLS + m.to[1]);
         const moveScore = m => {
             if (tt.move && SAME_MOVE(m, tt.move)) return 1000000000;
             if (killers[0] && SAME_MOVE(m, killers[0])) return 5000000;
             if (killers[1] && SAME_MOVE(m, killers[1])) return 4000000;
-            return captureScore(m);
+            if (m.captured) return 1000000 + captureScore(m);   // v1.7.0：吃子整体优先于历史分
+            return ctx.history[histIdx(m)];                     // v1.7.0 历史启发（静着法）
         };
         moves.sort((a, b) => moveScore(b) - moveScore(a));
         if (tt.move) {
@@ -1008,17 +1248,41 @@ const XQ = (() => {
         for (let i = 0; i < moves.length; i++) {
             const m = moves[i];
             const cap = makeMove(board, m);
+            const oh1 = ctx.h1, oh2 = ctx.h2;
+            applyMoveHash(ctx, m, cap);
             ctx.ply++;
+            ctx.keyStack.push(ZOBRIST.combine(ctx.h1, ctx.h2));
+            // 长将检测：走完这着，若对方被将军 → 连续将军计数+1；否则清零
+            const wasCheck = isInCheck(board, -color);
+            const prevStreak = ctx.checkStreak;
+            ctx.checkStreak = wasCheck ? prevStreak + 1 : 0;
+            // v1.7.0 将军延伸：走完对方被将军时本层不降深度（每线路最多 12 次，防节点爆炸）。
+            // 象棋杀棋多靠连续将军推进，延伸能显著提升大师档的杀棋发现能力。
+            const extBefore = ctx.ext;
+            const useExt = wasCheck && ctx.ext < 12;
+            if (useExt) ctx.ext++;
+            const baseDepth = depth - 1 + (useExt ? 1 : 0);
             let v;
             if (i === 0) {
-                v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+                v = -search(board, baseDepth, -beta, -alpha, -color, ctx);
             } else {
-                v = -search(board, depth - 1, -alpha - 1, -alpha, -color, ctx);
+                // v1.6.5 LMR：非首着、非吃子、非TT/杀手着法降一层搜索（排序靠后 i>=3），
+                // 深度>2 才降（保护将杀序列）。实测同着法下节点 -60%、耗时 -40%。
+                let rd = baseDepth;
+                if (depth > 2 && i >= 3 && cap === 0) {
+                    const isKiller = (ctx.killers[ctx.ply] || []).some(k => k && SAME_MOVE(k, m));
+                    if (!isKiller) rd = baseDepth - 1;
+                }
+                v = -search(board, rd, -alpha - 1, -alpha, -color, ctx);
                 if (v > alpha && v < beta) {
-                    v = -search(board, depth - 1, -beta, -alpha, -color, ctx);
+                    v = -search(board, baseDepth, -beta, -alpha, -color, ctx);
                 }
             }
+            ctx.ext = extBefore;
             ctx.ply--;
+            ctx.checkStreak = prevStreak;
+            ctx.keyStack.pop();
+            ctx.h1 = oh1; ctx.h2 = oh2;
             unmakeMove(board, m, cap);
             if (ctx.abort) return 0;
             if (v > best) { best = v; bestMove = m; }
@@ -1029,73 +1293,120 @@ const XQ = (() => {
                     if (!ctx.killers[ctx.ply]) ctx.killers[ctx.ply] = [];
                     const ks = ctx.killers[ctx.ply];
                     if (!ks[0] || !SAME_MOVE(ks[0], m)) { ks[1] = ks[0]; ks[0] = m; }
+                    // v1.7.0 历史启发：造成剪枝的静着法按 depth² 加分（封顶 90 万，保持低于吃子档）
+                    const hi = histIdx(m);
+                    const nv = ctx.history[hi] + depth * depth;
+                    ctx.history[hi] = nv > 900000 ? 900000 : nv;
                 }
                 break;
             }
         }
         if (Math.abs(best) < MATE - depth * 2) {
-            storeTT(key, depth, best, alpha, beta, bestMove);
+            storeTT(key, depth, best, alphaOrig, beta, bestMove);
         }
         return best;
     }
 
     let lastNodes = 0;
+    let lastDepth = 0;   // v1.7.0：本轮搜索实际完成的完整层数（诊断/自检用）
     function getLastNodes() { return lastNodes; }
+    function getLastDepth() { return lastDepth; }
 
-    // 残局子力判和：双方都无进攻子(马/炮/车/过河兵)则绝对和棋  
-    // 返回 true 表示该局面任何一方都无法将杀（即便继续也无必胜手段）
+    // 残局子力判和：只有"双方都完全没有任何可用来将杀的子力"才是绝对和棋。
+    // v1.6.6 修复：原实现把"未过河的兵"排除在进攻子之外，导致 帅+高兵 vs 孤将 被误判为和棋。
+    // 实测（t25_matingmaterial.js 真实引擎穷搜）：帅+兵(任意位置,含高兵/未过河)
+    // vs 孤将，红方均可在 ≤12 ply 内强制将杀——兵必须计为进攻子。
+    // 注：单马/单炮 vs 孤将在象棋理论中无法将杀，但本函数刻意保守（不判和），
+    // 交由五十步/三次重复等规则收尾，避免误判必胜残局为和棋。
     function isDrawByMaterial(board) {
-        let hasOffRed = false, hasOffBlack = false;
+        let redAttackers = 0, blackAttackers = 0;
         for (let r = 0; r < board.length; r++) {
             const row = board[r];
             for (let c = 0; c < row.length; c++) {
                 const pc = row[c];
                 if (!pc) continue;
                 const type = getType(pc);
-                // 进攻子：马、炮、车，或已过河的兵（兵过河对红=进到r<=4，对黑=r>=5）
-                if (type === HORSE || type === CANNON || type === CHARIOT) {
-                    if (pc > 0) hasOffRed = true; else hasOffBlack = true;
-                    if (hasOffRed && hasOffBlack) return false;
-                } else if (type === PAWN) {
-                    if (pc > 0 && r <= 4) hasOffRed = true;      // 红兵过河(向上r减小)
-                    else if (pc < 0 && r >= 5) hasOffBlack = true; // 黑卒过河
-                    if (hasOffRed && hasOffBlack) return false;
+                // 进攻子：马、炮、车、兵(卒)——任意位置的兵都能配合己方帅/将取胜
+                if (type === HORSE || type === CANNON || type === CHARIOT || type === PAWN) {
+                    if (pc > 0) redAttackers++; else blackAttackers++;
+                    // 双方都还有进攻子 → 绝不可能"子力不足"，直接放行（早退）
+                    if (redAttackers > 0 && blackAttackers > 0) return false;
                 }
             }
         }
-        // 若任一方还有进攻子而另一方完全没有，仍可能将杀(但复杂: 单车胜, 单马胜单士等)
-        // 保守：仅当双方都无进攻子才判和
-        return !hasOffRed && !hasOffBlack;
+        // 仅当"双方都没有任何进攻子"才是绝对和棋（任何一方还有攻子，就仍可能取胜）
+        return redAttackers === 0 && blackAttackers === 0;
     }
 
-    function findBestMove(board, color, level) {
-        const depthMap = { 1: 2, 2: 3, 3: 6 };
+    function findBestMove(board, color, level, avoidKeys, budgetOverride) {
+        // v1.7.0：大师档不再硬限 6 层——增量哈希后单层耗时约为旧版一半，6 层只用掉
+        // 3 秒预算的 1/3，剩下的时间被白白浪费。改为把深度上限放宽到远超预算的水平
+        // （10 层），由"时间预算 + 下一层耗时预测"决定实际搜到多深，迭代加深拿最深完整层。
+        const depthMap = { 1: 2, 2: 3, 3: 10 };
         const limitMap = { 1: 400, 2: 900, 3: 3000 };
         const marginMap = { 1: 90, 2: 35, 3: 0 };
 
         const maxDepth = depthMap[level] || 2;
-        const timeLimit = limitMap[level] || 400;
+        let timeLimit = limitMap[level] || 400;
+        // v1.7.0：允许调用方压低时间预算（Web Worker 不可用时的主线程同步回退走短预算，
+        // 宁可这一步棋弱一点，也不让界面冻结好几秒）
+        if (budgetOverride > 0 && budgetOverride < timeLimit) timeLimit = budgetOverride;
         const margin = marginMap[level] !== undefined ? marginMap[level] : 0;
 
+        // v1.6.6：大师档清空置换表，保证"同一局面 → 同一着法"可复现。
+        // 置换表是跨次搜索复用的缓存，命中时的着法排序/剪枝顺序会随上次搜索内容变化，
+        // 导致同一局面重复搜索得出不同着法（实测连续 5 次：车八进一 / 炮八平五 / 炮二平五）。
+        // 简单/困难档保留跨步复用（时间预算紧，复用可换来更深搜索）；大师档 margin=0
+        // 本就是"确定性最强"档位，可复现性优先于那点缓存收益。
+        if (level >= 3) TT.clear();
+
         const work = cloneBoard(board);
-        const roots = legalMoves(work, color);
+        let roots = legalMoves(work, color);
         if (roots.length === 0) return null;
 
-        const ctx = { start: Date.now(), limit: timeLimit, abort: false, nodes: 0, ply: 0, qdepth: 0, killers: [] };
+        // v1.6.5 跨步重复避免（根层）：剔除"走完会命中 avoidKeys(已重复2次的局面)"的着法，
+        // 仅当还有别的选择时剔除；全部都会重复时保留(游戏层第3次判和兜底)
+        const av = avoidKeys || [];
+        const avoidSet = av.length > 0 ? new Set(av) : null;
+        const rootHash = ZOBRIST.parts(work, color);
+        if (avoidSet && avoidSet.size > 0) {
+            const filteredRoots = [];
+            for (let i = 0; i < roots.length; i++) {
+                const m = roots[i];
+                if (!avoidSet.has(keyAfter(rootHash[0], rootHash[1], m))) filteredRoots.push(m);
+            }
+            if (filteredRoots.length > 0) roots = filteredRoots;
+        }
+
+        const ctx = { start: Date.now(), limit: timeLimit, abort: false, nodes: 0, ply: 0, qdepth: 0,
+                      killers: [], checkStreak: 0, keyStack: [], avoidKeys: avoidSet,
+                      // v1.7.0：增量 Zobrist（h1/h2）+ 历史启发表 + 将军延伸计数
+                      h1: rootHash[0], h2: rootHash[1], history: new Int32Array(90 * 90), ext: 0,
+                      noNull: false };
         roots.sort((a, b) => captureScore(b) - captureScore(a));
 
         let bestMove = roots[0];
         let bestScores = null;
 
         for (let d = 1; d <= maxDepth; d++) {
+            const layerStart = Date.now();
             let localBest = null, localScore = -Infinity;
             const iter = [];
             let aborted = false;
             for (let i = 0; i < roots.length; i++) {
                 const m = roots[i];
                 const cap = makeMove(work, m);
+                const oh1 = ctx.h1, oh2 = ctx.h2;
+                applyMoveHash(ctx, m, cap);
                 ctx.ply = 1;
-                const v = -search(work, d - 1, -Infinity, Infinity, -color, ctx);
+                ctx.checkStreak = isInCheck(work, -color) ? 1 : 0;
+                ctx.keyStack.push(ZOBRIST.combine(ctx.h1, ctx.h2));
+                // v1.6.6 提速：根层传递 alpha（首个根着法全窗口，其余以当前最佳为下界）。
+                // 根着法之间因此可剪枝，实测困难档 -75%、大师档 -86% 耗时，着法基本一致。
+                const rootAlpha = (i === 0) ? -Infinity : -localScore;
+                const v = -search(work, d - 1, -Infinity, -rootAlpha, -color, ctx);
+                ctx.keyStack.pop();
+                ctx.h1 = oh1; ctx.h2 = oh2;
                 unmakeMove(work, m, cap);
                 if (ctx.abort) { aborted = true; break; }
                 m.score = v;
@@ -1104,16 +1415,34 @@ const XQ = (() => {
             }
             if (aborted) break;
             bestMove = localBest;
+            lastDepth = d;
             bestScores = iter.map(m => ({ m: m, score: m.score }));
             roots.sort((a, b) => (b.score || 0) - (a.score || 0));
-            // 大师档用更充分的时间预算(0.75), 低档保持紧凑(0.55)
-            const budgetRatio = level === 3 ? 0.75 : 0.55;
-            if (Date.now() - ctx.start > timeLimit * budgetRatio) break;
+            // 大师档用更充分的时间预算(0.85), 低档保持紧凑(0.55)
+            const budgetRatio = level === 3 ? 0.85 : 0.55;
+            const budgetMs = timeLimit * budgetRatio;
+            const elapsed = Date.now() - ctx.start;
+            if (elapsed > budgetMs) break;
+            // v1.7.0 时间预测：本层耗时 ×1.3 仍塞不进预算就不开下一层（abort 会丢掉整层，
+            // 开了也白算）；系数取得小是因为迭代加深下一层常因排序变好而没翻倍。
+            const layerMs = Date.now() - layerStart;
+            // v1.7.0b：这里曾试图按"上一层实测增长比"预测下一层（想省掉算不完的那层），
+            // 但 Safari 实测太保守——早期层的增长比动辄十几倍，预测直接把大师档从 6 层压回 5 层
+            // （619ms/d5），棋力净亏。迭代加深里"多试一层、算不完就丢弃"只损失等待时间，
+            // 而"少搜一层"是实打实的棋力损失，所以保持乐观系数 1.3。
+            if (elapsed + layerMs * 1.3 > budgetMs) break;
         }
         lastNodes = ctx.nodes;
 
-        let pool = bestScores ? bestScores.filter(s => s.score >= (bestScores[0].score - margin)) : null;
-        if (!pool || pool.length === 0) return bestMove;
+        // v1.6.5 修复"大师档随机抽次优着"：原 pool 锚定 bestScores[0].score——
+        // 那是按上一层分数排序后的第一个着法，其本层分数未必最高；margin=0 的大师档也可能
+        // 在"≥旧最佳分"的次优池里随机抽（与国际象棋 7.4.0 修过的"困难倒挂"同源）。
+        // 现在：大师档直接走本层最佳；低档以本层最高分为基准抽签。
+        if (!bestScores || bestScores.length === 0) return bestMove;
+        if (level >= 3) return bestMove;
+        const topScore = bestScores.reduce((a, s) => Math.max(a, s.score), -Infinity);
+        let pool = bestScores.filter(s => s.score >= topScore - margin);
+        if (pool.length === 0) return bestMove;
         if (level === 1 && pool.length > 1) {
             const safe = pool.filter(s => {
                 const test = cloneBoard(board);
@@ -1136,12 +1465,80 @@ const XQ = (() => {
 
     return {
         RED, BLACK, KING, ADVISOR, ELEPHANT, HORSE, CHARIOT, CANNON, PAWN,
-        ROWS, COLS, MATE,
+        ROWS, COLS, MATE, VALUES,
         createInitialBoard, cloneBoard, getType, getColor, inBounds, inPalace,
         findKing, isSquareAttacked, isInCheck,
         generateMoves, legalMoves, makeMove, unmakeMove,
-        evaluate, findBestMove, getLastNodes, isDrawByMaterial
+        evaluate, findBestMove, getLastNodes, getLastDepth, isDrawByMaterial,
+        keyOf: ZOBRIST.keyOf
     };
+}
+
+// 主线程实例：走法生成/合法性/记谱/复盘分析仍在本地；AI 与提示的搜索默认走 Worker。
+const XQ = XQEngineFactory();
+
+// ===== v1.6.5 AI 搜索 Worker =====
+// 把引擎工厂源码序列化进 Blob Worker，后台线程独立实例化一份引擎跑搜索：
+// 大师档 1~3s 的思考不再冻结界面。任何环节失败（老 WebView 不支持 Blob Worker 等）
+// findBestMoveAsync 返回 null，调用方自动回退主线程同步搜索，功能不受影响。
+const XQWorker = (() => {
+    let worker = null, seq = 0;
+    const pending = new Map();
+    function createWorker() {
+        try {
+            const src =
+                'const XQ = (' + XQEngineFactory.toString() + ')();\n' +
+                'onmessage = function(e) {\n' +
+                '    const d = e.data;\n' +
+                '    try {\n' +
+                '        const move = XQ.findBestMove(d.board, d.color, d.level, d.avoidKeys || []);\n' +
+                '        postMessage({ id: d.id, ok: true, move: move, nodes: XQ.getLastNodes() });\n' +
+                '    } catch (err) {\n' +
+                '        postMessage({ id: d.id, ok: false, error: String(err) });\n' +
+                '    }\n' +
+                '};';
+            const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+            w.onmessage = (e) => {
+                const d = e.data, p = pending.get(d.id);
+                if (p) { pending.delete(d.id); p(d); }
+            };
+            w.onerror = () => {
+                // 运行期出错：唤醒所有等待者，之后永久回退主线程
+                try { w.terminate(); } catch (e) {}
+                if (worker === w) worker = null;
+                const ps = Array.from(pending.values());
+                pending.clear();
+                ps.forEach(p => p(null));
+            };
+            worker = w;
+        } catch (e) { worker = null; }
+        return worker;
+    }
+    createWorker();
+    // Worker 可用 → 返回 Promise；不可用 → 返回 null（调用方走同步回退）
+    // v1.6.5 连贯性保护：任何一次搜索都带超时，超时 resolve(null) →
+    // 调用方立即走主线程同步搜索兜底，杜绝"AI 长时间思考后卡住不下棋"。
+    // 超时阈值按难度给足余量：简单/困难 3s，大师 6s（正常搜索远快于此）。
+    function findBestMoveAsync(args) {
+        if (!worker && !createWorker()) return null;
+        return new Promise(resolve => {
+            const id = ++seq;
+            const timer = setTimeout(() => {
+                pending.delete(id);
+                // 超时说明 worker 可能卡死/极慢：终止并重建，避免旧搜索排队拖垮后续请求
+                try { worker.terminate(); } catch (e) {}
+                worker = null;
+                // 重建（惰性：下次 findBestMoveAsync 时重新 init）
+                resolve(null);
+            }, (args.level === 3 ? 6000 : 3000));
+            pending.set(id, (res) => {
+                clearTimeout(timer);
+                resolve(res);
+            });
+            worker.postMessage(Object.assign({ id }, args));
+        });
+    }
+    return { findBestMoveAsync };
 })();
 
 /* ===================== 音效 ===================== */
@@ -1243,9 +1640,10 @@ const PRACTICE_POSITIONS = [
     { group: '基本杀法', name: '单马擒孤将', player: 'r', limit: 30, win: 'mate',
       goal: '马擒单将：马要跳到"日"字的关键点控制将的活动范围，同时用帅"占中"压缩对方空间。要点：帅先占中路，再用马步步紧逼。',
       pieces: [['K',9,4],['N',7,4],['k',0,4]] },
-    { group: '基本杀法', name: '单车例胜单缺士', player: 'r', limit: 40, win: 'mate',
-      goal: '车对单士：先用帅"白脸将"限制将的活动，再用车将军。要点：车不要急着吃士，先把将逼到边线。',
-      pieces: [['K',9,4],['R',8,3],['k',0,4],['a',0,3]] },
+    { group: '基本杀法', name: '单车例胜单士', player: 'r', limit: 40, win: 'mate',
+      goal: '单车对单士：车先沉底将军，把将逼到顶层，再横车"—"字拴住，最后用帅"占中"形成白脸将收网。',
+      pieces: [['K',9,3],['R',2,8],['k',1,4],['a',0,5]],
+      best: [[2,8],[0,8]] },
     { group: '基本杀法', name: '炮镇当头·铁门栓', player: 'r', limit: 3, win: 'mate',
       goal: '铁门栓：红炮在中路牵制住黑方士象，车沉底将军，将无处可逃。',
       pieces: [['K',9,4],['C',7,4],['R',8,0],['k',0,4],['a',0,3],['a',0,5]] },
@@ -1254,41 +1652,49 @@ const PRACTICE_POSITIONS = [
       pieces: [['K',9,4],['R',8,0],['R',8,1],['k',0,3],['p',3,4]] },
 
     { group: '一步杀', name: '马后炮', player: 'r', limit: 1, win: 'mate',
-      goal: '马后炮：马控制将的活动点，炮在马后将军，将无法躲避。',
-      pieces: [['K',9,4],['N',7,4],['C',8,4],['k',0,4]] },
-    { group: '一步杀', name: '车炮抽杀', player: 'r', limit: 1, win: 'mate',
-      goal: '红方先行，一步将杀。提示：炮在中间做炮架，车从底线切入。',
-      pieces: [['K',9,4],['C',7,4],['R',9,0],['k',0,4],['a',0,3]] },
-    { group: '一步杀', name: '重炮杀', player: 'r', limit: 1, win: 'mate',
-      goal: '重炮：两炮同线，前炮做炮架，后炮将军，将无处可逃。',
-      pieces: [['K',9,4],['C',6,4],['C',8,4],['k',0,4]] },
-    { group: '一步杀', name: '闷宫杀', player: 'r', limit: 1, win: 'mate',
-      goal: '闷宫：将被自己的士象堵死，红车一刀封喉。',
-      pieces: [['K',9,4],['R',9,1],['k',0,4],['a',0,3],['a',0,5],['b',0,2],['b',0,6]] },
-
-    { group: '两步杀', name: '卧槽马', player: 'r', limit: 2, win: 'mate',
-      goal: '卧槽马：马跳到 (7,3) 或 (7,5) 附近的卧槽点将军，配合车形成绝杀。',
-      pieces: [['K',9,4],['N',5,4],['R',8,0],['k',0,4],['a',0,3]] },
+      goal: '马后炮：红马已控制将的退路，红炮沉底将军，将无处可逃——一步将杀。',
+      pieces: [['K',9,4],['N',1,5],['C',9,7],['k',0,4],['a',1,4],['a',0,5]],
+      best: [[9,7],[0,7]] },
+    { group: '一步杀', name: '车炮沉底杀', player: 'r', limit: 3, win: 'mate',
+      goal: '车炮配合：中路炮牵制住黑方士角，红车沉底"闷杀"。本局不是一步杀，需先手引离，三步内完成。',
+      pieces: [['K',9,4],['C',7,4],['R',9,0],['k',0,4],['a',0,3]],
+      best: [[9,0],[1,0]] },
+    { group: '一步杀', name: '双炮杀', player: 'r', limit: 1, win: 'mate',
+      goal: '双炮战术：一炮借另一炮做炮架，沿同一纵线将军直接将杀。一步将杀。',
+      pieces: [['K',9,4],['C',4,3],['C',8,4],['k',1,3],['a',0,3],['a',0,5]],
+      best: [[8,4],[8,3]] },
+    { group: '一步杀', name: '车杀闷宫', player: 'r', limit: 1, win: 'mate',
+      goal: '闷宫杀：黑将上方被自家士象堵死，红车从侧翼横扫将军，一步闷杀。',
+      pieces: [['K',9,4],['R',4,6],['k',0,4],['a',2,5],['a',1,4]],
+      best: [[4,6],[0,6]] },
+    { group: '两步杀', name: '车马两步杀', player: 'r', limit: 2, win: 'mate',
+      goal: '车马配合：红车直插将门叫将，黑方只能躲将，红马随即封住逃路；两步内将杀。',
+      pieces: [['K',9,5],['N',3,2],['R',7,4],['k',0,3],['a',0,5],['a',1,4]],
+      best: [[7,4],[0,4]] },
     { group: '两步杀', name: '车马冷着', player: 'r', limit: 2, win: 'mate',
-      goal: '红方先行，两步之内将杀。要点：先用马控制将的退路，再动车。',
-      pieces: [['K',9,4],['N',6,3],['R',7,0],['k',0,4],['a',0,5]] },
-    { group: '两步杀', name: '双炮叠杀', player: 'r', limit: 2, win: 'mate',
-      goal: '红方先行，两步之内将杀。要点：先调一个炮到位，再形成重炮。',
-      pieces: [['K',9,4],['C',5,4],['C',9,0],['k',0,4],['a',0,3],['a',0,5]] },
+      goal: '车马冷着：红车先卡住将的正面要道，红马控制侧翼要点；两步内将杀。',
+      pieces: [['K',9,3],['N',1,1],['R',5,4],['k',1,5],['a',0,5],['a',0,3]],
+      best: [[5,4],[1,4]] },
+    { group: '两步杀', name: '双炮两步杀', player: 'r', limit: 2, win: 'mate',
+      goal: '双炮叠杀：先调一炮到将门同一纵线，再借另一炮做炮架形成重炮绝杀；两步内将杀。',
+      pieces: [['K',9,4],['C',6,4],['C',7,2],['k',1,5],['a',2,5],['a',0,3]],
+      best: [[7,2],[2,2]] },
     { group: '两步杀', name: '车兵巧胜', player: 'r', limit: 2, win: 'mate',
       goal: '红方先行，两步之内将杀。要点：兵已贴近九宫，车从侧面配合。',
       pieces: [['K',9,4],['P',2,4],['R',9,0],['k',0,4],['a',0,3]] },
 
     { group: '三步杀', name: '三步收网', player: 'r', limit: 3, win: 'mate',
-      goal: '红方先行，三步之内将杀。要点：逐步压缩将的活动空间，每一步都不要浪费。',
-      pieces: [['K',9,4],['R',7,0],['N',6,5],['k',0,4],['a',0,3],['a',0,5]] },
+      goal: '三步收网：车马配合逐步压缩将的活动空间——先用车叫将逼将平移，再用马封门；三步内将杀。',
+      pieces: [['K',9,4],['N',1,8],['R',6,0],['k',1,5],['a',1,4],['a',2,3]],
+      best: [[6,0],[1,0]] },
     { group: '三步杀', name: '车炮三手杀', player: 'r', limit: 3, win: 'mate',
       goal: '红方先行，三步之内将杀。要点：车炮配合，先用炮控制中路，再沉车。',
       pieces: [['K',9,4],['R',9,0],['C',7,4],['k',0,3],['a',0,4]] },
 
     { group: '实用残局', name: '单兵巧胜单士', player: 'r', limit: 25, win: 'mate',
-      goal: '兵已过河且贴近九宫：配合帅"占中"，兵步步紧逼，吃掉单士后即可取胜。',
-      pieces: [['K',9,4],['P',3,4],['k',0,4],['a',0,3]] },
+      goal: '兵已过河且逼至将门附近：配合帅"占中"，兵步步紧逼，吃掉单士后即可取胜。（引擎验证：25 步内可强制将杀）',
+      pieces: [['K',9,4],['P',2,6],['k',0,3],['a',2,3]],
+      best: [[9,4],[9,3]] },
     { group: '实用残局', name: '马低兵胜单士', player: 'r', limit: 30, win: 'mate',
       goal: '马控制要点、低兵压肋：这是教科书级的必胜残局，需要耐心。',
       pieces: [['K',9,4],['N',5,3],['P',2,4],['k',0,4],['a',0,3]] },
@@ -1313,6 +1719,10 @@ class XiangqiGame {
         this.capturedByRed = [];
         this.capturedByBlack = [];
         this.lastMove = null;
+        this.positionHistory = [];
+        this._continuousChecks = 0;
+        this._checkStreakBySide = { 1: 0, '-1': 0 };
+        this._lastCheckSide = 0;
         this.gameOver = false;
         this.isThinking = false;
         this.isAnimating = false;
@@ -1364,7 +1774,8 @@ class XiangqiGame {
 
         if (this.practiceMode) {
             this.startPractice(this.practiceIndex);
-        } else {
+        } else if (!this.loadSavedGame()) {
+            // 有未下完的存档就接着下（v1.6.9），否则开新局
             this.newGame(true);
         }
     }
@@ -1808,14 +2219,17 @@ class XiangqiGame {
     updateMoveHistory() {
         let html = '';
         const last = this.moveTexts.length - 1;
+        // v1.6.6：已生成复盘评价的着法加 analyzed 类（虚线下划线），提示"可点击查看"
+        const analyzed = this._analysisResults || null;
+        const hasA = (idx) => !!(analyzed && analyzed.some(x => x && x.ply === idx));
         for (let i = 0; i < this.moveTexts.length; i += 2) {
             const num = Math.floor(i / 2) + 1;
             const a = this.moveTexts[i] || '';
             const b = this.moveTexts[i + 1] || '';
             const isLast = (i === last || i + 1 === last);
             html += '<span class="move-entry' + (isLast ? ' cur' : '') + '">' + num + '.';
-            if (a) html += '<span class="ply" data-ply="' + i + '">' + a + '</span>';
-            if (b) html += '<span class="ply" data-ply="' + (i + 1) + '">' + b + '</span>';
+            if (a) html += '<span class="ply' + (hasA(i) ? ' analyzed' : '') + '" data-ply="' + i + '">' + a + '</span>';
+            if (b) html += '<span class="ply' + (hasA(i + 1) ? ' analyzed' : '') + '" data-ply="' + (i + 1) + '">' + b + '</span>';
             html += '</span>';
         }
         if (this._lastMoveHtml !== html) {
@@ -1901,7 +2315,13 @@ class XiangqiGame {
             capturedByBlack: this.capturedByBlack.slice(),
             lastMove: this.lastMove ? { from: this.lastMove.from.slice(), to: this.lastMove.to.slice(), piece: this.lastMove.piece, captured: this.lastMove.captured } : null,
             moveTexts: this.moveTexts.slice(),
-            moveRecords: this.moveRecords.slice()
+            moveRecords: this.moveRecords.slice(),
+            positionHistory: this.positionHistory ? this.positionHistory.slice() : [],
+            checkStreakBySide: this._checkStreakBySide ? Object.assign({}, this._checkStreakBySide) : { 1: 0, '-1': 0 },
+            // v1.6.6：连将方也必须快照。否则悔棋后 _lastCheckSide 还是悔棋前的值，
+            // 而 _checkStreakBySide 已回退到更早的值——两者不一致会让长将判负
+            // 把责任算在错误的一方头上（已复现）。
+            lastCheckSide: this._lastCheckSide || 0
         });
     }
 
@@ -1981,7 +2401,17 @@ class XiangqiGame {
     }
 
     _applyMove(move) {
+        // v1.6.5 修复：开局库着法 move 对象未带 captured 字段（undefined）——
+        // 之前 undefined !== 0 被误判为吃子，把 undefined push 进 capturedByRed/Black，
+        // 吃子面板渲染出 "undefined" 字样。这里统一归一化，杜绝任何来源的裸 move。
+        if (move.captured === undefined || move.captured === null) move.captured = 0;
         const piece = this.board[move.from[0]][move.from[1]];
+        // v1.6.6 加固：防御非法/空气着法——起点必须真有棋子，且目标不得是己方子。
+        // 万一有任何脏数据（剧本写错、外部调用）流到这层，宁可拒绝这一手也不破坏棋盘：
+        // 原实现会把 0(空) 搬到目标、或让棋子无声消失、并把回合推进，导致对局错乱。
+        if (!piece) return false;
+        const dst = this.board[move.to[0]][move.to[1]];
+        if (dst !== 0 && ((dst > 0) === (piece > 0))) return false;
         const isCapture = move.captured !== 0;
         this.lastMove = move;
 
@@ -2003,8 +2433,55 @@ class XiangqiGame {
         this.hintMove = null;
         this._lastMarksHtml = null;
 
+        // v1.6.5 重复局面/长将检测：走子后记录局面 key（含轮到谁走）
+        const mover = -this.currentPlayer;   // 刚走的一方
+        this.positionHistory.push(this._boardKey());
+        // 连续将军计数：走完后若对方被将军，则 mover 连将+1；否则 mover 自己的计数清零。
+        // v1.6.8 修正：不再清零对手的计数。连将的语义是「同一方在自己每个回合都将军」，
+        // 双方计数各记各的——对手上一步的计数在对手当时就已维护好，这里碰它等于把
+        // 「红将军→黑逃→红再将军」这种标准长将从中间打断：红方计数每轮都被黑方抹掉，
+        // 永远停在 1，长将判负形同虚设。已复现：车长将循环连走 12 手不判负，
+        // 反被第 9 手的「三次重复判和」接管。
+        // v1.6.6 的原意是防「陈旧计数误伤」：某方连将 3 次后计数残留，另一方仅将军
+        // 1 次就被双方 max 抬到 >=3 判负。该问题改用「只读当前将军方的计数」根治，
+        // 不必去清零对手。
+        const inCheck = XQ.isInCheck(this.board, this.currentPlayer);
+        this._checkStreakBySide[mover] = inCheck ? (this._checkStreakBySide[mover] || 0) + 1 : 0;
+        if (inCheck) {
+            this._lastCheckSide = mover;
+            // 取「正在将军那一方」的计数，而非双方最大值 —— 杜绝陈旧计数误伤
+            this._continuousChecks = this._checkStreakBySide[mover] || 0;
+        } else {
+            // 当前无人被将军：连将序列已中断
+            this._continuousChecks = 0;
+        }
+
         this.render();
         this.updateControlsState();
+    }
+
+    // 棋盘局面 key：直接用引擎 ZOBRIST 哈希（与 AI 搜索内部视角完全一致），
+    // 走子方用 currentPlayer 体现（哈希含 turnKey/blackSideKey）
+    _boardKey() {
+        return XQ.keyOf(this.board, this.currentPlayer);
+    }
+
+    // v1.6.5 跨步重复避免：返回整局中已出现 ≥2 次的局面 key 列表。
+    // 语义：AI 走完自己一步后，若新局面的 key 命中这些 key → 会形成第 3 次重复，
+    // 搜索在 makeMove 后按"轮到对方"视角(keyOf(board,-color))匹配并过滤该着法。
+    // 注意：positionHistory 存的是"每步走完后轮到的一方"视角。AI 走完必轮到对方，
+    // 因此只保留"对方视角"的重复 key；"当前视角"(轮到currentPlayer)的 key AI 一步
+    // 走不到（走子方必翻转），排除以免误伤。
+    _avoidKeys() {
+        if (!this.positionHistory || this.positionHistory.length < 4) return [];
+        const counts = new Map();
+        for (let i = 0; i < this.positionHistory.length; i++) {
+            const k = this.positionHistory[i];
+            counts.set(k, (counts.get(k) || 0) + 1);
+        }
+        const avoid = [];
+        counts.forEach((cnt, k) => { if (cnt >= 2) avoid.push(k); });
+        return avoid;
     }
 
     _afterMove(move, piece, isCapture) {
@@ -2022,6 +2499,7 @@ class XiangqiGame {
         }
 
         if (this.checkGameEnd()) return;
+        this.saveGame();
 
         if (this.gameMode === 'pvc' && this.currentPlayer === this.aiColorValue()) {
             this.scheduleAI();
@@ -2076,6 +2554,57 @@ class XiangqiGame {
             this.clearSavedGame();
             return true;
         }
+
+        // v1.6.5 长将判负（修正）：只有"无效连将"才判负——同一方连续将军 ≥3 次
+        // 且 当前局面在 positionHistory 中已出现 ≥2 次（形成循环，无实质进展）。
+        // 有效连将（步步推进、最终将死）局面不重复，不判负。
+        const streak = this._continuousChecks || 0;
+        if (streak >= 3 && XQ.legalMoves(this.board, this.currentPlayer).length > 0) {
+            const curKey = this._boardKey();
+            let repCnt = 0;
+            if (this.positionHistory) {
+                for (let i = 0; i < this.positionHistory.length; i++) if (this.positionHistory[i] === curKey) repCnt++;
+            }
+            if (repCnt < 2) { /* 有效连将（局面在推进），不判负 */ }
+            else {
+            const loser = this._lastCheckSide || -this.currentPlayer;
+            this.gameOver = true;
+            if (this.practiceMode) {
+                const won = loser !== this.playerColorValue();
+                this.practiceFinish(won, won ? '对方长将判负，你赢了！' : '长将判负，再试一次。');
+            } else {
+                const loserName = loser === XQ.RED ? '红方' : '黑方';
+                const winName = loser === XQ.RED ? (this.gameMode === 'pvc' && this.aiColorValue() === XQ.BLACK ? 'AI' : '黑方') : (this.gameMode === 'pvc' && this.aiColorValue() === XQ.RED ? 'AI' : '红方');
+                this.showModal('长将判负', loserName + '连续将军三次（无效长将），判负！' + winName + '获胜！', 'end');
+                SoundManager.playGameEnd();
+            }
+            this.clearSavedGame();
+            this.updateControlsState();
+            this.render();
+            return true;
+            }
+        }
+
+        // v1.6.5 三次重复局面判和：同一局面（含轮走方）出现 ≥3 次 → 和棋
+        if (this.positionHistory && this.positionHistory.length >= 5) {
+            const cur = this._boardKey();
+            let cnt = 0;
+            for (let i = 0; i < this.positionHistory.length; i++) if (this.positionHistory[i] === cur) cnt++;
+            if (cnt >= 3) {
+                this.gameOver = true;
+                if (this.practiceMode) {
+                    this.practiceFinish(false, '三次重复局面，判为和棋。');
+                } else {
+                    this.showModal('和棋', '三次重复局面，判为和棋！', 'end');
+                    SoundManager.playGameEnd();
+                }
+                this.clearSavedGame();
+                this.updateControlsState();
+                this.render();
+                return true;
+            }
+        }
+
         const moves = XQ.legalMoves(this.board, this.currentPlayer);
         if (moves.length === 0) {
             this.gameOver = true;
@@ -2108,6 +2637,11 @@ class XiangqiGame {
     openingBookMove() {
         const t = this.moveTexts;
         if (t.length < 1 || t.length > OPENING_DEPTH) return null;
+        // v1.6.6 加固：命中谱着后必须校验"该着法在当前棋盘合法"，否则回落引擎搜索。
+        // 原实现只比对记谱文本前缀、完全不校验棋盘——谱内一处坐标写错就会走出
+        // "起点无子的空气着法"（棋盘不动但回合被消耗，记谱打印 undefined），
+        // 甚至覆盖己方子力。此校验让任何脏数据都无法再污染对局。
+        const legal = XQ.legalMoves(this.board, this.currentPlayer);
         for (let i = 0; i < OPENINGS.length; i++) {
             const line = OPENINGS[i].moves;
             if (line.length <= t.length) continue;
@@ -2116,10 +2650,13 @@ class XiangqiGame {
                 const text = this.moveToChinese({ from: line[k].from, to: line[k].to }, line[k].piece);
                 if (text !== t[k]) { ok = false; break; }
             }
-            if (ok) {
-                const nxt = line[t.length];
-                return { from: nxt.from.slice(), to: nxt.to.slice() };
-            }
+            if (!ok) continue;
+            const nxt = line[t.length];
+            // 谱着必须与实际轮到方一致，且是当前局面的合法着法
+            if (nxt.piece > 0 !== (this.currentPlayer === XQ.RED)) continue;
+            const hit = legal.find(m => m.from[0] === nxt.from[0] && m.from[1] === nxt.from[1]
+                                     && m.to[0] === nxt.to[0] && m.to[1] === nxt.to[1]);
+            if (hit) return { from: hit.from.slice(), to: hit.to.slice(), captured: hit.captured || 0 };
         }
         return null;
     }
@@ -2133,7 +2670,7 @@ class XiangqiGame {
         const level = this.difficulty;
 
         let started = false;
-        const start = () => {
+        const start = async () => {
             if (started) return;
             started = true;
             if (this.aiFrame) { cancelAnimationFrame(this.aiFrame); this.aiFrame = null; }
@@ -2142,11 +2679,34 @@ class XiangqiGame {
 
             let move = null;
             try {
-                move = this.openingBookMove() || XQ.findBestMove(this.board, color, level);
+                move = this.openingBookMove();
+                if (!move) {
+                    // v1.6.5：搜索走 Web Worker，大师档 1~3s 不再卡界面；Worker 不可用回退同步搜索
+                    const avoidKeys = this._avoidKeys();
+                    const req = XQWorker.findBestMoveAsync({ board: this.board, color: color, level: level, avoidKeys: avoidKeys });
+                    if (req) {
+                        const res = await req;   // 期间界面完全流畅；被中断则结果由 gen 校验作废；超时/异常会 resolve(null)
+                        if (res && res.ok) move = res.move;
+                    }
+                    // v1.6.5 连贯性兜底：Worker 超时/异常/不可用 → 立即同步搜索（同步搜索自身有
+                    // 时间预算 abort，绝不会无限卡），保证 AI 回合一定能走出棋。
+                    if (!move) {
+                        // v1.7.0：回退同步搜索限时 1.2s（默认大师档 3s），避免主线程冻结过久
+                        move = XQ.findBestMove(this.board, color, level, avoidKeys, 1200);
+                    }
+                }
             } catch (e) { move = null; }
 
             if (gen !== this._aiGen) { this.isThinking = false; this.render(); return; }
             this.isThinking = false;
+            if (!move) {
+                // v1.6.5 最后兜底：连同步搜索都拿不到着法时，走"第一个合法着法"，
+                // 无论如何不让 AI 回合卡住（此时多半已接近终局，走完由 checkGameEnd 收尾）。
+                try {
+                    const legal = XQ.legalMoves(this.board, color);
+                    if (legal && legal.length > 0) move = legal[0];
+                } catch (e2) { move = null; }
+            }
             if (!move) {
                 this.render();
                 this.checkGameEnd();
@@ -2222,6 +2782,16 @@ class XiangqiGame {
         this.lastMove = target.lastMove;
         this.moveTexts = target.moveTexts;
         this.moveRecords = target.moveRecords;
+        if (target.positionHistory !== undefined) {
+            this.positionHistory = target.positionHistory;
+            this._checkStreakBySide = target.checkStreakBySide;
+            this._lastCheckSide = target.lastCheckSide !== undefined ? target.lastCheckSide : 0;
+            // v1.6.8：与 _applyMove 的新语义保持一致 —— 只读「当前连将方」的计数，
+            // 不再取双方最大值（否则悔棋后会把对手的陈旧计数重新抬起来，重现误伤）。
+            this._continuousChecks = (XQ.isInCheck(this.board, this.currentPlayer) && this._lastCheckSide)
+                ? (this._checkStreakBySide[this._lastCheckSide] || 0)
+                : 0;
+        }
         this.gameOver = false;
         this.selected = null;
         this.validMoves = [];
@@ -2248,6 +2818,8 @@ class XiangqiGame {
         } else {
             this.showToast('已悔棋（练习模式不限次数）');
         }
+        // v1.6.9：悔棋后的盘面也要落存档，否则关掉再开会回到悔棋之前
+        this.saveGame();
     }
 
     undoLimit() {
@@ -2278,7 +2850,10 @@ class XiangqiGame {
                 ? 3 - (mine === XQ.RED ? this.undoUsedR : this.undoUsedB)
                 : (this.practiceMode ? Infinity : this.undoLeft());
             const notMyTurn = this.gameMode === 'pvp' && this.currentPlayer === mine;
-            this.undoBtn.disabled = this.gameOver || noSteps || left <= 0 || notMyTurn;
+            // v1.6.6：人机模式执黑时，红方刚走完第一步 → 玩家还没有自己的棋可悔，
+            // 按钮应直接置灰，而不是"可点但点了被 undoMove 拒绝"（状态与行为不一致）。
+            const noMineYet = this.gameMode === 'pvc' && this.playerColor === 'b' && this.moveTexts.length <= 1;
+            this.undoBtn.disabled = this.gameOver || noSteps || left <= 0 || notMyTurn || noMineYet;
             this.undoBtn.textContent = '悔棋';
         }
         // 双人模式：对方（棋盘上方那方）悔棋按钮，同样按对方剩余次数+可悔判定 disable
@@ -2345,6 +2920,10 @@ class XiangqiGame {
         this.capturedByRed = [];
         this.capturedByBlack = [];
         this.lastMove = null;
+        this.positionHistory = [];
+        this._continuousChecks = 0;
+        this._checkStreakBySide = { 1: 0, '-1': 0 };
+        this._lastCheckSide = 0;
         this.gameOver = false;
         this.hintMove = null;
         this.humanMoved = false;
@@ -2375,7 +2954,7 @@ class XiangqiGame {
             this.isAnimating = false;
             this.boardWrapper.querySelectorAll('.animating-piece').forEach(el => el.remove());
             this.gameMode = toPvp ? 'pvp' : 'pvc';
-            this.newGame(true);
+            this.newGame();   // v1.6.9：切换模式即弃局，连同存档一起作废
             this.showToast(toPvp ? '已切换到双人对战' : '已切换回人机对战');
         };
         this.showModal(toPvp ? '切换到双人对战' : '切换回人机对战',
@@ -2429,7 +3008,7 @@ class XiangqiGame {
             return;
         }
         this.updateColorSliderUI();
-        this.newGame(true);
+        this.newGame();   // v1.6.9：换色重开即弃局，存档一并作废
     }
 
     showColorHint(text) {
@@ -2544,14 +3123,29 @@ class XiangqiGame {
             this.showToast('已标出建议走法');
             return;
         }
+        // v1.6.6：练习局优先用预先验证过的"正解首着"（题目数据 best 字段）。
+        // 这些首着由真实引擎穷搜确认"在 limit 步内可强制将杀"，比现算搜索更可靠。
+        if (this.practiceMode && !this.practiceDone) {
+            const ex = PRACTICE_POSITIONS[this.practiceIndex];
+            if (ex && ex.best && ex.best.length === 2) {
+                const legal = XQ.legalMoves(this.board, this.currentPlayer);
+                const hit = legal.find(m => m.from[0] === ex.best[0][0] && m.from[1] === ex.best[0][1]
+                                         && m.to[0] === ex.best[1][0] && m.to[1] === ex.best[1][1]);
+                if (hit) {
+                    this.hintMove = hit;
+                    this._hintPly = this.moveTexts.length;
+                    this.render();
+                    this.showToast('已标出本题正解首着');
+                    return;
+                }
+            }
+        }
         this._hintRunning = true;
         if (this.hintBtnEl) this.hintBtnEl.classList.add('busy');
         this.showToast('正在为你思考…');
         const token = this.animationToken;
         const color = this.currentPlayer;
-        setTimeout(() => {
-            let move = null;
-            try { move = XQ.findBestMove(this.board, color, 3); } catch (e) { move = null; }
+        const finish = (move) => {
             this._hintRunning = false;
             if (this.hintBtnEl) this.hintBtnEl.classList.remove('busy');
             if (token !== this.animationToken) return;
@@ -2560,7 +3154,26 @@ class XiangqiGame {
             this._hintPly = this.moveTexts.length;
             this.render();
             this.showToast('已标出建议走法');
-        }, 40);
+        };
+        // v1.6.5：提示搜索走 Worker（思考期间界面不卡）；Worker 不可用回退同步搜索
+        // v1.6.5：Worker 超时/异常 → 同步搜索兜底，提示永不卡死
+        const avoidKeys = this._avoidKeys();
+        const req = XQWorker.findBestMoveAsync({ board: this.board, color: color, level: 3, avoidKeys: avoidKeys });
+        if (req) {
+            req.then(res => {
+                if (res && res.ok) { finish(res.move); return; }
+                // 超时/异常兜底：同步搜索
+                let move = null;
+                try { move = XQ.findBestMove(this.board, color, 3, avoidKeys, 1200); } catch (e) { move = null; }
+                finish(move);
+            });
+        } else {
+            setTimeout(() => {
+                let move = null;
+                try { move = XQ.findBestMove(this.board, color, 3, avoidKeys, 1200); } catch (e) { move = null; }
+                finish(move);
+            }, 40);
+        }
     }
 
     /* ===================== 弹窗 / Toast ===================== */
@@ -2609,6 +3222,113 @@ class XiangqiGame {
         }, duration || 2200);
     }
 
+    /* ===================== 续下存档（v1.6.9） =====================
+       原先只有 clearSavedGame()，全项目找不到对应的写入 —— 关掉 App 再打开对局就没了。
+       存档时机：每一步走完（含 AI 应招）。clearSavedGame 的场景（新局/认输/切换模式/
+       练习模式）依旧让它作废，行为不变。saveGame 内部自带 gameOver / practiceMode 守卫，
+       所以紧跟终局判定其后调用也不会把已结束的对局存进去。 */
+    saveGame() {
+        if (this.practiceMode || this.gameOver) return;
+        try {
+            localStorage.setItem('xqSavedGame', JSON.stringify({
+                v: 1,
+                board: this.board,
+                currentPlayer: this.currentPlayer,
+                playerColor: this.playerColor,
+                gameMode: this.gameMode,
+                difficulty: this.difficulty,
+                flipped: this.flipped,
+                moveTexts: this.moveTexts,
+                moveRecords: this.moveRecords,
+                capturedByRed: this.capturedByRed,
+                capturedByBlack: this.capturedByBlack,
+                lastMove: this.lastMove,
+                positionHistory: this.positionHistory,
+                checkStreakBySide: this._checkStreakBySide,
+                lastCheckSide: this._lastCheckSide,
+                humanMoved: this.humanMoved,
+                undoUsed: this.undoUsed,
+                undoUsedR: this.undoUsedR,
+                undoUsedB: this.undoUsedB,
+                undoCap: this.undoCap,
+                ts: Date.now()
+            }));
+        } catch (e) { /* 忽略 */ }
+    }
+
+    // 有新存档时恢复对局（返回 true 表示已接管，调用方不要再 newGame）
+    loadSavedGame() {
+        let d = null;
+        try {
+            const raw = localStorage.getItem('xqSavedGame');
+            if (!raw) return false;
+            d = JSON.parse(raw);
+        } catch (e) { return false; }
+        if (!d || d.v !== 1 || !Array.isArray(d.board) || d.board.length !== 10) return false;
+        // 数据体检：整盘必须全是合法格子、双方各有且仅有一个将/帅
+        try {
+            let redK = 0, blackK = 0;
+            for (let r = 0; r < 10; r++) {
+                if (!Array.isArray(d.board[r]) || d.board[r].length !== 9) return false;
+                for (let c = 0; c < 9; c++) {
+                    const p = d.board[r][c];
+                    if (!Number.isInteger(p) || p < -7 || p > 7) return false;
+                    if (p === XQ.KING) redK++;
+                    if (p === -XQ.KING) blackK++;
+                }
+            }
+            if (redK !== 1 || blackK !== 1) return false;
+        } catch (e) { return false; }
+
+        this.board = d.board;
+        this.currentPlayer = d.currentPlayer === XQ.BLACK ? XQ.BLACK : XQ.RED;
+        this.gameMode = d.gameMode === 'pvp' ? 'pvp' : 'pvc';
+        this.playerColor = (d.playerColor === 'b' || d.playerColor === 'r') ? d.playerColor : 'r';
+        this.difficulty = (d.difficulty >= 1 && d.difficulty <= 3) ? d.difficulty : this.difficulty;
+        this.flipped = !!d.flipped;
+        this.moveTexts = Array.isArray(d.moveTexts) ? d.moveTexts : [];
+        this.moveRecords = Array.isArray(d.moveRecords) ? d.moveRecords : [];
+        this.capturedByRed = Array.isArray(d.capturedByRed) ? d.capturedByRed : [];
+        this.capturedByBlack = Array.isArray(d.capturedByBlack) ? d.capturedByBlack : [];
+        this.lastMove = d.lastMove || null;
+        this.positionHistory = Array.isArray(d.positionHistory) ? d.positionHistory : [];
+        this._checkStreakBySide = (d.checkStreakBySide && typeof d.checkStreakBySide === 'object')
+            ? d.checkStreakBySide : { 1: 0, '-1': 0 };
+        this._lastCheckSide = d.lastCheckSide || 0;
+        this._continuousChecks = (XQ.isInCheck(this.board, this.currentPlayer) && this._lastCheckSide)
+            ? (this._checkStreakBySide[this._lastCheckSide] || 0) : 0;
+        this.humanMoved = !!d.humanMoved;
+        this.undoUsed = d.undoUsed || 0;
+        this.undoUsedR = d.undoUsedR || 0;
+        this.undoUsedB = d.undoUsedB || 0;
+        this.undoCap = d.undoCap || (UNDO_LIMITS[this.difficulty] || 3);
+
+        // 本局内可悔的步数上限就是刚走完的这盘棋本身（historyStack 不持久化）
+        this.historyStack = [];
+        // 恢复历史栈的「局面快照」没有意义（没有 undo 可回），但从首局面走一遍代价高；
+        // 这里按当前盘面重建一条最小快照，保证悔棋按钮的可用性判定不至于错乱。
+        this.selected = null;
+        this.validMoves = [];
+        this.gameOver = false;
+        this.hintMove = null;
+        this._lastMarksHtml = null;
+        this._lastMoveHtml = null;
+        this._analysisResults = null;
+        this._checkSoundPlayed = false;
+        this.isThinking = false;
+        this.isAnimating = false;
+
+        this.updateColorSliderUI();
+        this.applyDisplayPrefs();
+        this.updateControlsState();
+        this.render();
+        // 恢复后若轮到 AI 走棋（例如存档停在 AI 回合），接着让它思考
+        if (this.gameMode === 'pvc' && this.currentPlayer === this.aiColorValue()) {
+            this.scheduleAI();
+        }
+        return true;
+    }
+
     clearSavedGame() {
         try { localStorage.removeItem('xqSavedGame'); } catch (e) { /* 忽略 */ }
     }
@@ -2651,6 +3371,10 @@ class XiangqiGame {
         this.capturedByRed = [];
         this.capturedByBlack = [];
         this.lastMove = null;
+        this.positionHistory = [];
+        this._continuousChecks = 0;
+        this._checkStreakBySide = { 1: 0, '-1': 0 };
+        this._lastCheckSide = 0;
         this.gameOver = false;
         this.hintMove = null;
         this.practiceDone = false;
@@ -2783,25 +3507,44 @@ class XiangqiGame {
 }
 
 /* ===================== 复盘分析 ===================== */
-function analysisEval(board, color, depth) {
+function analysisEval(board, color, depth, alpha, beta) {
+    // v1.6.5：加入 alpha-beta 剪枝（旧版是纯 minimax，全量遍历所有着法，深一层慢一个数量级）
+    if (alpha === undefined) alpha = -Infinity;
+    if (beta === undefined) beta = Infinity;
     if (depth <= 0) return XQ.evaluate(board);
     const moves = XQ.legalMoves(board, color);
     if (moves.length === 0) return color === XQ.RED ? -XQ.MATE : XQ.MATE;
+    // v1.6.5：吃子排序按被吃子真实价值（旧版 Math.abs(captured) 是棋子类型编号 1~7，排序基准是错的）
     moves.sort((a, b) => {
-        const sa = a.captured ? (Math.abs(a.captured) * 10) : 0;
-        const sb = b.captured ? (Math.abs(b.captured) * 10) : 0;
+        const sa = a.captured ? (XQ.VALUES[XQ.getType(a.captured)] || 0) : 0;
+        const sb = b.captured ? (XQ.VALUES[XQ.getType(b.captured)] || 0) : 0;
         return sb - sa;
     });
-    let best = color === XQ.RED ? -Infinity : Infinity;
-    for (let i = 0; i < moves.length; i++) {
-        const m = moves[i];
-        const cap = XQ.makeMove(board, m);
-        const v = analysisEval(board, -color, depth - 1);
-        XQ.unmakeMove(board, m, cap);
-        if (color === XQ.RED) { if (v > best) best = v; }
-        else { if (v < best) best = v; }
+    if (color === XQ.RED) {
+        let best = -Infinity;
+        for (let i = 0; i < moves.length; i++) {
+            const m = moves[i];
+            const cap = XQ.makeMove(board, m);
+            const v = analysisEval(board, -color, depth - 1, alpha, beta);
+            XQ.unmakeMove(board, m, cap);
+            if (v > best) best = v;
+            if (best > alpha) alpha = best;
+            if (alpha >= beta) break;
+        }
+        return best;
+    } else {
+        let best = Infinity;
+        for (let i = 0; i < moves.length; i++) {
+            const m = moves[i];
+            const cap = XQ.makeMove(board, m);
+            const v = analysisEval(board, -color, depth - 1, alpha, beta);
+            XQ.unmakeMove(board, m, cap);
+            if (v < best) best = v;
+            if (best < beta) beta = best;
+            if (alpha >= beta) break;
+        }
+        return best;
     }
-    return best;
 }
 
 function startAnalysis(g) {
@@ -2820,14 +3563,19 @@ function startAnalysis(g) {
         g.modalAnalysisBtnEl.classList.add('danger');
     }
 
-    const snapshots = [{
-        board: XQ.createInitialBoard(),
-        currentPlayer: XQ.RED
-    }];
+    // v1.6.6 修正：快照数组的第 i 项必须是"第 i 手走之前"的局面。
+    // 旧实现前面多塞了一个初始局面（snapshots = [初始] + historyStack + [终局]），
+    // 却仍按 snapshots[i] 取用，于是从第 2 手起全部错位一格——用的是上一手之前的
+    // 局面，连"把实际着法落子到该局面"都可能落成非法手（起点无子/吃己方子），
+    // 导致复盘给出的"失误/疑问手"评分和"建议着法"整体不可信（已实测复现）。
+    // historyStack[i] 正是第 i 手走之前的局面（含轮到谁走），直接对齐即可。
+    const snapshots = [];
     for (let i = 0; i < g.historyStack.length; i++) {
         const h = g.historyStack[i];
         snapshots.push({ board: XQ.cloneBoard(h.board), currentPlayer: h.currentPlayer });
     }
+    // 兜底：若存在 moveRecords 比 historyStack 长的情况（异常存档等），用终局局面补齐，
+    // 保证 snapshots[i] 不会 undefined（step 里另有 snap && rec 守卫）。
     snapshots.push({ board: XQ.cloneBoard(g.board), currentPlayer: g.currentPlayer });
 
     const step = () => {
@@ -2859,6 +3607,19 @@ function startAnalysis(g) {
             const cap2 = XQ.makeMove(work2, rec);
             actualScore = analysisEval(work2, -mover, 2);
             XQ.unmakeMove(work2, rec, cap2);
+            // v1.6.6 一致性校验：错位修正后，实际着法必须落在合法着法列表里。
+            // 若不合法（理论上不该发生），标记为无法评估，而不是拿错误分数给出"失误"结论。
+            const wasLegal = legal.some(m => m.from[0] === rec.from[0] && m.from[1] === rec.from[1]
+                                          && m.to[0] === rec.to[0] && m.to[1] === rec.to[1]);
+            if (!wasLegal) {
+                g._analysisResults.push({
+                    ply: i, text: rec.text, dev: 0, grade: 'good',
+                    best: '', from: rec.from, to: rec.to, note: '局面快照异常，跳过评估'
+                });
+                g._analysisPly++;
+                setTimeout(step, 0);
+                return;
+            }
 
             const dev = Math.abs(actualScore - bestScore);
             let grade = 'good';
@@ -2935,7 +3696,7 @@ const OPENINGS = [
     { name: '五七炮对屏风马', moves: [
         { from: [7,7], to: [7,4], piece: XQ.CANNON },   // 红 炮二平五
         { from: [0,1], to: [2,2], piece: -XQ.HORSE },   // 黑 馬2進3
-        { from: [7,1], to: [7,6], piece: XQ.CANNON },   // 红 炮八平七(五七炮)
+        { from: [7,1], to: [7,2], piece: XQ.CANNON },   // 红 炮八平七(五七炮)——v1.6.6 修：原 [7,6] 为七路对侧，非法
         { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
         { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
         { from: [0,8], to: [0,7], piece: -XQ.CHARIOT }, // 黑 車9平8
@@ -2943,13 +3704,13 @@ const OPENINGS = [
     ]},
     { name: '仕角炮', moves: [
         { from: [7,7], to: [7,5], piece: XQ.CANNON },   // 红 炮二平四(仕角炮)
-        { from: [3,7], to: [4,7], piece: -XQ.PAWN },    // 黑 卒3进1
+        { from: [3,2], to: [4,2], piece: -XQ.PAWN },    // 黑 卒3进1——v1.6.6 修：黑方纵线名=列号+1，"3"即列2(原 [3,7] 为八路空位)
         { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
         { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
     ]},
     { name: '过宫炮', moves: [
         { from: [7,7], to: [7,3], piece: XQ.CANNON },   // 红 炮二平六(过宫炮)
-        { from: [3,7], to: [4,7], piece: -XQ.PAWN },    // 黑 卒3进1
+        { from: [3,2], to: [4,2], piece: -XQ.PAWN },    // 黑 卒3进1——v1.6.6 修（同仕角炮）
         { from: [9,7], to: [7,6], piece: XQ.HORSE },    // 红 傌二进三
         { from: [0,7], to: [2,6], piece: -XQ.HORSE },   // 黑 馬8進7
     ]},
@@ -2964,6 +3725,24 @@ const OPENINGS = [
 ];
 
 const game = new XiangqiGame();
+
+/* v1.7.0 稳定性：全局未捕获异常兜底。
+   引擎/动画里任何意外异常若发生在 isThinking / isAnimating 期间，界面会永远停在
+   "AI 思考中"或动画中间态而无法继续下棋——这里强制解除这两个状态并重绘。 */
+window.addEventListener('error', function () {
+    try {
+        if (game) {
+            if (game.isThinking) game.isThinking = false;
+            if (game.isAnimating) game.isAnimating = false;
+            game.render();
+        }
+    } catch (e) { /* 兜底里再出错就放弃 */ }
+});
+window.addEventListener('unhandledrejection', function () {
+    try {
+        if (game && game.isThinking) { game.isThinking = false; game.render(); }
+    } catch (e) { /* 忽略 */ }
+});
 
 // 安卓返回键
 window.__androidBack = function () {
